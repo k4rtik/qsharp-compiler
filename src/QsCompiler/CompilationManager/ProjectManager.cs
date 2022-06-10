@@ -187,6 +187,8 @@ namespace Microsoft.Quantum.QsCompiler.CompilationBuilder
     {
         private class Project : IDisposable
         {
+            public static readonly Uri NotebookProjectUri = new Uri("notebook:///");
+
             public Uri ProjectFile { get; }
 
             public Uri? OutputPath { get; private set; }
@@ -243,6 +245,7 @@ namespace Microsoft.Quantum.QsCompiler.CompilationBuilder
             /// IMPORTANT: This routine queries the current state of the project and does *not* wait for queued or running tasks to finish!
             /// </remarks>
             internal bool ContainsSourceFile(Uri sourceFile) =>
+                this.ProjectFile
                 this.specifiedSourceFiles?.Contains(sourceFile) ?? false;
 
             /// <summary>
@@ -702,7 +705,7 @@ namespace Microsoft.Quantum.QsCompiler.CompilationBuilder
 
                 return this.processing.QueueForExecutionAsync(() =>
                 {
-                    if (!this.specifiedSourceFiles.Contains(sourceFile) || !this.isLoaded || openInEditor(sourceFile) != null)
+                    if (!this.ContainsSourceFile(sourceFile) || !this.isLoaded || openInEditor(sourceFile) != null)
                     {
                         return;
                     }
@@ -739,7 +742,7 @@ namespace Microsoft.Quantum.QsCompiler.CompilationBuilder
                 this.processing.QueueForExecution(
                     () =>
                     {
-                        if (!this.specifiedSourceFiles.Contains(file))
+                        if (!this.ContainsSourceFile(file))
                         {
                             return false;
                         }
@@ -949,6 +952,16 @@ namespace Microsoft.Quantum.QsCompiler.CompilationBuilder
                         project.LoadProjectAsync(outputPaths, this.MigrateToProject(openInEditor), null);
                     }
                 }
+            });
+        }
+
+        public Task CreateNotebookProject(ProjectInformation.Loader projectInfoLoader)
+        {
+            return this.load.QueueForExecutionAsync(() =>
+            {
+                QsCompilerError.Verify(projectInfoLoader(Project.NotebookProjectUri, out var info), "projectInfoLoader() to CreateNotebookProject() should not fail");
+                var project = new Project(Project.NotebookProjectUri, info, this.logException, this.publishDiagnostics, this.log);
+                this.projects.AddOrUpdate(Project.NotebookProjectUri, project, (k, v) => project);
             });
         }
 

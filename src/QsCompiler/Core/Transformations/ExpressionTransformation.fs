@@ -473,7 +473,9 @@ and ExpressionTransformationBase(exkindTransformation, typeTransformation, optio
     default this.OnTypeParamResolutions typeParams =
         let filteredTypeParams =
             typeParams
-            |> Seq.map (fun kv -> QsTypeParameter.New(fst kv.Key, snd kv.Key) |> this.Types.OnTypeParameter, kv.Value)
+            |> Seq.map (fun kv ->
+                let origin, name = kv.Key
+                QsTypeParameter.New(origin, name) |> this.Types.OnTypeParameter, kv.Value)
             |> Seq.choose (function
                 | TypeParameter tp, value -> Some((tp.Origin, tp.TypeName), this.Types.OnType value)
                 | _ -> None)

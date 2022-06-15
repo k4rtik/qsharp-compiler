@@ -10,25 +10,25 @@ open Microsoft.Quantum.QsCompiler.SyntaxTree
 open Microsoft.Quantum.QsCompiler.Transformations.Core
 
 type Target =
-    {
-        name: string
-        capability: TargetCapability
-    }
+    | Target of name: string * capability: TargetCapability
 
-    member target.Name = target.name
+    member target.Name =
+        let (Target (name = name)) = target
+        name
 
-    member target.Capability = target.capability
+    member target.Capability =
+        let (Target (capability = capability)) = target
+        capability
 
 module Target =
     [<CompiledName "Create">]
-    let create name capability =
-        { name = name; capability = capability }
+    let create name capability = Target(name, capability)
 
-type 'props Pattern =
+type 'Props Pattern =
     {
         Capability: TargetCapability
         Diagnose: Target -> QsCompilerDiagnostic option
-        Properties: 'props
+        Properties: 'Props
     }
 
 module Pattern =
@@ -45,7 +45,7 @@ module Pattern =
             TargetCapability.bottom
             patterns
 
-type Analyzer<'subject, 'props> = 'subject -> 'props Pattern seq
+type Analyzer<'Subject, 'Props> = 'Subject -> 'Props Pattern seq
 
 module Analyzer =
     let concat (analyzers: Analyzer<_, _> seq) subject = Seq.collect ((|>) subject) analyzers

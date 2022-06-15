@@ -443,7 +443,7 @@ type QsExpression with
                     conditionalIntExpr (IsNegative step) (SyntaxGenerator.IntLiteral 0L) (LengthMinusOne array)
                 | ex -> if validSlicing ex then LengthMinusOne array else invalidRangeDelimiter
 
-            let resolveSlicingRange start step end_ =
+            let resolveSlicingRange start step finish =
                 let integerExpr ex =
                     let ex = resolve context ex
                     inference.Constrain(ResolvedType.New Int .> ex.ResolvedType) |> List.iter diagnose
@@ -452,10 +452,10 @@ type QsExpression with
                 let resolvedStep = step |> Option.map integerExpr
 
                 let resolveWith build (ex: QsExpression) =
-                    if ex.isMissing then build resolvedStep else integerExpr ex
+                    if ex.IsMissing then build resolvedStep else integerExpr ex
 
                 let resolvedStart, resolvedEnd =
-                    start |> resolveWith openStartInSlicing, end_ |> resolveWith openEndInSlicing
+                    start |> resolveWith openStartInSlicing, finish |> resolveWith openEndInSlicing
 
                 match resolvedStep with
                 | Some resolvedStep ->
@@ -466,10 +466,10 @@ type QsExpression with
             | RangeLiteral (lhs, end_) ->
                 match lhs.Expression with
                 | RangeLiteral (start, step) ->
-                    // Cases: xs[...step..end], xs[start..step...], xs[start..step..end], xs[...step...].
+                    // Cases: xs[...step..finish], xs[start..step...], xs[start..step..finish], xs[...step...].
                     resolveSlicingRange start (Some step) end_
                 | _ ->
-                    // Cases: xs[...end], xs[start...], xs[start..end], xs[...].
+                    // Cases: xs[...finish], xs[start...], xs[start..finish], xs[...].
                     resolveSlicingRange lhs None end_
             | _ ->
                 // Case: xs[i].

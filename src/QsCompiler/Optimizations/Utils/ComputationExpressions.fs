@@ -55,22 +55,22 @@ type internal MaybeBuilder() =
 
 
 /// Represents the result of an imperative computation.
-/// 'a represents the internal state of the computation.
-/// 'b represents the output of the computation.
-/// 'c represents anything that can interrupt the computation.
-type ImperativeResult<'a, 'b, 'c> =
+/// 'S represents the internal state of the computation.
+/// 'O represents the output of the computation.
+/// 'I represents anything that can interrupt the computation.
+type ImperativeResult<'S, 'O, 'I> =
     /// The computation ended with this output and state
-    | Normal of 'b * 'a
+    | Normal of 'O * 'S
     /// The computation is breaking out of a loop, and has this state
-    | Break of 'a
+    | Break of 'S
     /// The computation was interrupted, with this interrupt
-    | Interrupt of 'c
+    | Interrupt of 'I
 
 /// Represents an imperative computation as a function from the initial state to a result.
-/// 'a represents the internal state of the computation.
-/// 'b represents the output of the computation.
-/// 'c represents anything that can interrupt the computation.
-type Imperative<'a, 'b, 'c> = ('a -> ImperativeResult<'a, 'b, 'c>)
+/// 'S represents the internal state of the computation.
+/// 'O represents the output of the computation.
+/// 'I represents anything that can interrupt the computation.
+type Imperative<'S, 'O, 'I> = 'S -> ImperativeResult<'S, 'O, 'I>
 
 /// A computation expression used to evaluate imperative, stateful code.
 type internal ImperativeBuilder() =

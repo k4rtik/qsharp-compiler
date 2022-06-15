@@ -11,16 +11,14 @@ open Microsoft.Quantum.QsCompiler.Transformations
 
 
 /// The SyntaxTreeTransformation used to unroll loops
-type LoopUnrolling private (_private_: string) =
+type LoopUnrolling(callables, maxSize) as this =
     inherit TransformationBase()
 
-    new(callables, maxSize) as this =
-        new LoopUnrolling("_private_")
-        then
-            this.Namespaces <- new LoopUnrollingNamespaces(this)
-            this.StatementKinds <- new LoopUnrollingStatementKinds(this, callables, maxSize)
-            this.Expressions <- new Core.ExpressionTransformation(this, Core.TransformationOptions.Disabled)
-            this.Types <- new Core.TypeTransformation(this, Core.TransformationOptions.Disabled)
+    do
+        this.Namespaces <- LoopUnrollingNamespaces(this)
+        this.StatementKinds <- LoopUnrollingStatementKinds(this, callables, maxSize)
+        this.Expressions <- Core.ExpressionTransformation(this, Core.TransformationOptions.Disabled)
+        this.Types <- Core.TypeTransformation(this, Core.TransformationOptions.Disabled)
 
 /// private helper class for LoopUnrolling
 and private LoopUnrollingNamespaces(parent: LoopUnrolling) =

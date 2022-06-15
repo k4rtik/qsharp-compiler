@@ -10,15 +10,13 @@ open Microsoft.Quantum.QsCompiler.Transformations
 
 
 /// The SyntaxTreeTransformation used to reorder statements depending on how they impact the program state.
-type StatementGrouping private (_private_: string) =
+type StatementGrouping() as this =
     inherit TransformationBase()
 
-    new() as this =
-        new StatementGrouping("_private_")
-        then
-            this.Statements <- new StatementGroupingStatements(this)
-            this.Expressions <- new Core.ExpressionTransformation(this, Core.TransformationOptions.Disabled)
-            this.Types <- new Core.TypeTransformation(this, Core.TransformationOptions.Disabled)
+    do
+        this.Statements <- StatementGroupingStatements(this)
+        this.Expressions <- Core.ExpressionTransformation(this, Core.TransformationOptions.Disabled)
+        this.Types <- Core.TypeTransformation(this, Core.TransformationOptions.Disabled)
 
 /// private helper class for StatementGrouping
 and private StatementGroupingStatements(parent: StatementGrouping) =

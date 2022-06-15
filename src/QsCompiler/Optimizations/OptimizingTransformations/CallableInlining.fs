@@ -16,31 +16,31 @@ open Microsoft.Quantum.QsCompiler.Transformations
 /// Represents all the functors applied to an operation call
 type private Functors =
     {
-        adjoint: bool
-        controlled: int
+        Adjoint: bool
+        Controlled: int
     }
-    static member None = { adjoint = false; controlled = 0 }
+    static member None = { Adjoint = false; Controlled = 0 }
 
-    member this.toSpecKind =
-        match this.adjoint, this.controlled with
+    member this.ToSpecKind =
+        match this.Adjoint, this.Controlled with
         | false, 0 -> QsBody
         | true, 0 -> QsAdjoint
         | false, _ -> QsControlled
         | true, _ -> QsControlledAdjoint
 
-    member this.withAdjoint = { this with adjoint = not this.adjoint }
-    member this.withControlled = { this with controlled = this.controlled + 1 }
+    member this.WithAdjoint = { this with Adjoint = not this.Adjoint }
+    member this.WithControlled = { this with Controlled = this.Controlled + 1 }
 
 
 /// Stores all the data needed to inline a callable
 type private InliningInfo =
     {
-        functors: Functors
-        callable: QsCallable
-        arg: TypedExpression
-        specArgs: QsTuple<LocalVariableDeclaration<QsLocalSymbol>>
-        body: QsScope
-        returnType: ResolvedType
+        Functors: Functors
+        Callable: QsCallable
+        Arg: TypedExpression
+        SpecArgs: QsTuple<LocalVariableDeclaration<QsLocalSymbol>>
+        Body: QsScope
+        ReturnType: ResolvedType
     }
 
     /// Tries to decompose a method expression into the method name and the functors applied.
@@ -51,10 +51,10 @@ type private InliningInfo =
         | Identifier (GlobalCallable qualName, _) -> Some(qualName, Functors.None)
         | AdjointApplication ex ->
             InliningInfo.TryGetQualNameAndFunctors ex
-            |> Option.map (fun (qualName, functors) -> qualName, functors.withAdjoint)
+            |> Option.map (fun (qualName, functors) -> qualName, functors.WithAdjoint)
         | ControlledApplication ex ->
             InliningInfo.TryGetQualNameAndFunctors ex
-            |> Option.map (fun (qualName, functors) -> qualName, functors.withControlled)
+            |> Option.map (fun (qualName, functors) -> qualName, functors.WithControlled)
         | _ -> None
 
     /// Tries to split a callable invocation into the functors applied, the callable, and the argument.
@@ -74,13 +74,13 @@ type private InliningInfo =
     /// If no such specialization is found, returns None.
     static member private TryGetImpl callable (functors: Functors) =
         callable.Specializations
-        |> Seq.tryFind (fun s -> s.Kind = functors.toSpecKind)
+        |> Seq.tryFind (fun s -> s.Kind = functors.ToSpecKind)
         |> Option.map (fun s -> s.Implementation)
 
     /// Tries to find a provided implementation for the given callable with the given specialization kind.
     /// Returns None if unable to find a provided implementation of the desired kind.
     static member private TryGetProvidedImpl callable functors =
-        match InliningInfo.TryGetImpl callable functors, InliningInfo.TryGetImpl callable functors.withAdjoint with
+        match InliningInfo.TryGetImpl callable functors, InliningInfo.TryGetImpl callable functors.WithAdjoint with
         | Some (Provided (specArgs, body)), _
         | Some (Generated SelfInverse), Some (Provided (specArgs, body)) -> Some(specArgs, body)
         | _ -> None
@@ -98,31 +98,30 @@ type private InliningInfo =
 
             return
                 {
-                    functors = functors
-                    callable = callable
-                    arg = arg
-                    specArgs = specArgs
-                    body = body
-                    returnType = returnType
+                    Functors = functors
+                    Callable = callable
+                    Arg = arg
+                    SpecArgs = specArgs
+                    Body = body
+                    ReturnType = returnType
                 }
         }
 
 
 /// The SyntaxTreeTransformation used to inline callables
-type CallableInlining private (_private_: string) =
+type CallableInlining(callables) as this =
     inherit TransformationBase()
+
+    do
+        this.Namespaces <- CallableInliningNamespaces(this)
+        this.Statements <- CallableInliningStatements(this, callables)
+        this.Expressions <- Core.ExpressionTransformation(this, Core.TransformationOptions.Disabled)
+        this.Types <- Core.TypeTransformation(this, Core.TransformationOptions.Disabled)
 
     // The current callable we're in the process of transforming
     member val CurrentCallable: QsCallable option = None with get, set
     member val Renamer: VariableRenaming option = None with get, set
 
-    new(callables) as this =
-        new CallableInlining("_private_")
-        then
-            this.Namespaces <- new CallableInliningNamespaces(this)
-            this.Statements <- new CallableInliningStatements(this, callables)
-            this.Expressions <- new Core.ExpressionTransformation(this, Core.TransformationOptions.Disabled)
-            this.Types <- new Core.TypeTransformation(this, Core.TransformationOptions.Disabled)
 
 /// private helper class for CallableInlining
 and private CallableInliningNamespaces(parent: CallableInlining) =
@@ -161,7 +160,7 @@ and private CallableInliningStatements(parent: CallableInlining, callables: Immu
                 match InliningInfo.TryGetInfo callables ex with
                 | Some ii ->
                     // Only recurse if we haven't processed this callable yet
-                    if found.Add ii.callable.FullName then findAllCalls callables ii.body found
+                    if found.Add ii.Callable.FullName then findAllCalls callables ii.Body found
                 | None -> ()
             | _ -> ())
 
@@ -179,17 +178,16 @@ and private CallableInliningStatements(parent: CallableInlining, callables: Immu
             let! currentCallable = parent.CurrentCallable
             let! renamer = parent.Renamer
             renamer.RenamingStack <- [ Map.empty ]
-            do! check (cannotReachCallable ii.body currentCallable.FullName)
-            do! check (ii.functors.controlled < 2)
+            do! check (cannotReachCallable ii.Body currentCallable.FullName)
+            do! check (ii.Functors.Controlled < 2)
             // TODO - support multiple Controlled functors
-            do! check (cannotReachCallable ii.body ii.callable.FullName || isLiteral callables ii.arg)
+            do! check (cannotReachCallable ii.Body ii.Callable.FullName || isLiteral callables ii.Arg)
 
-            let newBinding = QsBinding.New ImmutableBinding (toSymbolTuple ii.specArgs, ii.arg)
+            let newBinding = QsBinding.New ImmutableBinding (toSymbolTuple ii.SpecArgs, ii.Arg)
 
             let newStatements =
-                ii.body.Statements.Insert(0, newBinding |> QsVariableDeclaration |> wrapStmt)
-                |> Seq.map renamer.Statements.OnStatement
-                |> Seq.map (fun s -> s.Statement)
+                ii.Body.Statements.Insert(0, newBinding |> QsVariableDeclaration |> wrapStmt)
+                |> Seq.map (fun s -> renamer.Statements.OnStatement(s).Statement)
                 |> ImmutableArray.CreateRange
 
             return ii, newStatements
@@ -200,7 +198,7 @@ and private CallableInliningStatements(parent: CallableInlining, callables: Immu
     let safeInline expr =
         maybe {
             let! ii, newStatements = tryInline expr
-            do! check (countReturnStatements ii.body = 0)
+            do! check (countReturnStatements ii.Body = 0)
             return newStatements
         }
 
@@ -212,7 +210,7 @@ and private CallableInliningStatements(parent: CallableInlining, callables: Immu
         maybe {
             let! ii, newStatements = tryInline expr
 
-            do! check (countReturnStatements ii.body = 1)
+            do! check (countReturnStatements ii.Body = 1)
             let lastStatement = newStatements.[newStatements.Length - 1]
 
             let! returnExpr =

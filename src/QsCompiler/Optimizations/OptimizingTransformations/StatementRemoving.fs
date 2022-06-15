@@ -14,15 +14,13 @@ open Microsoft.Quantum.QsCompiler.Transformations
 
 
 /// The SyntaxTreeTransformation used to remove useless statements
-type StatementRemoval private (_private_: string) =
+type StatementRemoval(removeFunctions: bool) as this =
     inherit TransformationBase()
 
-    new(removeFunctions: bool) as this =
-        new StatementRemoval("_private_")
-        then
-            this.Statements <- new VariableRemovalStatements(this, removeFunctions)
-            this.Expressions <- new Core.ExpressionTransformation(this, Core.TransformationOptions.Disabled)
-            this.Types <- new Core.TypeTransformation(this, Core.TransformationOptions.Disabled)
+    do
+        this.Statements <- VariableRemovalStatements(this, removeFunctions)
+        this.Expressions <- Core.ExpressionTransformation(this, Core.TransformationOptions.Disabled)
+        this.Types <- Core.TypeTransformation(this, Core.TransformationOptions.Disabled)
 
 /// private helper class for StatementRemoval
 and private VariableRemovalStatements(parent: StatementRemoval, removeFunctions) =

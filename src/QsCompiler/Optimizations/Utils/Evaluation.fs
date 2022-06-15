@@ -34,7 +34,7 @@ type private FunctionInterrupt =
     | CouldNotEvaluate of string
 
 /// A shorthand for the specific Imperative type used by several functions in this file
-type private Imp<'t> = Imperative<EvalState, 't, FunctionInterrupt>
+type private Imp<'T> = Imperative<EvalState, 'T, FunctionInterrupt>
 
 
 /// Evaluates functions by stepping through their code
@@ -187,16 +187,17 @@ type internal FunctionEvaluator(callables: IDictionary<QsQualifiedName, QsCallab
 
 
 /// The ExpressionTransformation used to evaluate constant expressions
-and internal ExpressionEvaluator private (_private_) =
+and internal ExpressionEvaluator
+    (
+        callables: IDictionary<QsQualifiedName, QsCallable>,
+        constants: IDictionary<string, TypedExpression>,
+        stmtsLeft: int
+    ) as this =
     inherit SyntaxTreeTransformation()
 
-    internal new(callables: IDictionary<QsQualifiedName, QsCallable>,
-                 constants: IDictionary<string, TypedExpression>,
-                 stmtsLeft: int) as this =
-        new ExpressionEvaluator("_private_")
-        then
-            this.ExpressionKinds <- new ExpressionKindEvaluator(this, callables, constants, stmtsLeft)
-            this.Types <- new TypeTransformation(this, TransformationOptions.Disabled)
+    do
+        this.ExpressionKinds <- ExpressionKindEvaluator(this, callables, constants, stmtsLeft)
+        this.Types <- TypeTransformation(this, TransformationOptions.Disabled)
 
 
 /// The ExpressionKindTransformation used to evaluate constant expressions
@@ -209,18 +210,18 @@ and private ExpressionKindEvaluator
     ) =
     inherit ExpressionKindTransformation(parent)
 
-    member private this.simplify e1 = this.Expressions.OnTypedExpression e1
+    member private this.Simplify e1 = this.Expressions.OnTypedExpression e1
 
-    member private this.simplify(e1, e2) =
+    member private this.Simplify(e1, e2) =
         (this.Expressions.OnTypedExpression e1, this.Expressions.OnTypedExpression e2)
 
-    member private this.simplify(e1, e2, e3) =
+    member private this.Simplify(e1, e2, e3) =
         (this.Expressions.OnTypedExpression e1,
          this.Expressions.OnTypedExpression e2,
          this.Expressions.OnTypedExpression e3)
 
-    member private this.arithBoolBinaryOp qop bigIntOp doubleOp intOp lhs rhs =
-        let lhs, rhs = this.simplify (lhs, rhs)
+    member private this.ArithBoolBinaryOp qop bigIntOp doubleOp intOp lhs rhs =
+        let lhs, rhs = this.Simplify(lhs, rhs)
 
         match lhs.Expression, rhs.Expression with
         | BigIntLiteral a, BigIntLiteral b -> BoolLiteral(bigIntOp a b)
@@ -228,15 +229,15 @@ and private ExpressionKindEvaluator
         | IntLiteral a, IntLiteral b -> BoolLiteral(intOp a b)
         | _ -> qop (lhs, rhs)
 
-    member private this.arithNumBinaryOp qop bigIntOp doubleOp intOp lhs rhs =
+    member private this.ArithNumBinaryOp qop bigIntOp doubleOp intOp lhs rhs =
         match lhs.Expression, rhs.Expression with
         | BigIntLiteral a, BigIntLiteral b -> BigIntLiteral(bigIntOp a b)
         | DoubleLiteral a, DoubleLiteral b -> DoubleLiteral(doubleOp a b)
         | IntLiteral a, IntLiteral b -> IntLiteral(intOp a b)
         | _ -> qop (lhs, rhs)
 
-    member private this.intBinaryOp qop bigIntOp intOp lhs rhs =
-        let lhs, rhs = this.simplify (lhs, rhs)
+    member private this.IntBinaryOp qop bigIntOp intOp lhs rhs =
+        let lhs, rhs = this.Simplify(lhs, rhs)
 
         match lhs.Expression, rhs.Expression with
         | BigIntLiteral a, BigIntLiteral b -> BigIntLiteral(bigIntOp a b)
@@ -252,7 +253,7 @@ and private ExpressionKindEvaluator
         | _ -> Identifier(sym, tArgs)
 
     override this.OnFunctionCall(method, arg) =
-        let method, arg = this.simplify (method, arg)
+        let method, arg = this.Simplify(method, arg)
 
         maybe {
             match method.Expression with
@@ -268,7 +269,7 @@ and private ExpressionKindEvaluator
         |? CallLikeExpression(method, arg)
 
     override this.OnOperationCall(method, arg) =
-        let method, arg = this.simplify (method, arg)
+        let method, arg = this.Simplify(method, arg)
 
         maybe {
             match method.Expression with
@@ -280,7 +281,7 @@ and private ExpressionKindEvaluator
         |? CallLikeExpression(method, arg)
 
     override this.OnPartialApplication(method, arg) =
-        let method, arg = this.simplify (method, arg)
+        let method, arg = this.Simplify(method, arg)
 
         maybe {
             match method.Expression with
@@ -292,7 +293,7 @@ and private ExpressionKindEvaluator
         |? CallLikeExpression(method, arg)
 
     override this.OnUnwrapApplication ex =
-        let ex = this.simplify ex
+        let ex = this.Simplify ex
 
         match ex.Expression with
         | CallLikeExpression ({ Expression = Identifier (GlobalCallable qualName, types) }, arg) when
@@ -313,7 +314,7 @@ and private ExpressionKindEvaluator
         | _ -> UnwrapApplication ex
 
     override this.OnArrayItemAccess(arr, idx) =
-        let arr, idx = this.simplify (arr, idx)
+        let arr, idx = this.Simplify(arr, idx)
 
         match arr.Expression, idx.Expression with
         | ValueArray va, IntLiteral i -> va.[safeCastInt64 i].Expression
@@ -325,15 +326,15 @@ and private ExpressionKindEvaluator
         | _ -> ArrayItem(arr, idx)
 
     override this.OnSizedArray(value, size) =
-        let value = this.simplify value
-        let size = this.simplify size
+        let value = this.Simplify value
+        let size = this.Simplify size
 
         match size.Expression with
         | IntLiteral i when isLiteral callables value -> constructArray (safeCastInt64 i) value
         | _ -> SizedArray(value, size)
 
     override this.OnNewArray(itemType, length) =
-        let length = this.simplify length
+        let length = this.Simplify length
 
         match length.Expression with
         | IntLiteral i -> defaultValue itemType.Resolution |> Option.map (safeCastInt64 i |> constructArray)
@@ -341,7 +342,7 @@ and private ExpressionKindEvaluator
         |> Option.defaultValue (NewArray(itemType, length))
 
     override this.OnCopyAndUpdateExpression(lhs, accEx, rhs) =
-        let lhs, accEx, rhs = this.simplify (lhs, accEx, rhs)
+        let lhs, accEx, rhs = this.Simplify(lhs, accEx, rhs)
 
         match lhs.Expression, accEx.Expression, rhs.Expression with
         | ValueArray va, IntLiteral i, _ -> ValueArray(va.SetItem(safeCastInt64 i, rhs))
@@ -355,53 +356,53 @@ and private ExpressionKindEvaluator
         | _ -> CopyAndUpdate(lhs, accEx, rhs)
 
     override this.OnConditionalExpression(e1, e2, e3) =
-        let e1 = this.simplify e1
+        let e1 = this.Simplify e1
 
         match e1.Expression with
-        | BoolLiteral a -> if a then (this.simplify e2).Expression else (this.simplify e3).Expression
-        | _ -> CONDITIONAL(e1, this.simplify e2, this.simplify e3)
+        | BoolLiteral a -> if a then (this.Simplify e2).Expression else (this.Simplify e3).Expression
+        | _ -> CONDITIONAL(e1, this.Simplify e2, this.Simplify e3)
 
     override this.OnEquality(lhs, rhs) =
-        let lhs, rhs = this.simplify (lhs, rhs)
+        let lhs, rhs = this.Simplify(lhs, rhs)
 
         match isLiteral callables lhs && isLiteral callables rhs with
         | true -> BoolLiteral(lhs.Expression = rhs.Expression)
         | false -> EQ(lhs, rhs)
 
     override this.OnInequality(lhs, rhs) =
-        let lhs, rhs = this.simplify (lhs, rhs)
+        let lhs, rhs = this.Simplify(lhs, rhs)
 
         match isLiteral callables lhs && isLiteral callables rhs with
         | true -> BoolLiteral(lhs.Expression <> rhs.Expression)
         | false -> NEQ(lhs, rhs)
 
     override this.OnLessThan(lhs, rhs) =
-        this.arithBoolBinaryOp LT (<) (<) (<) lhs rhs
+        this.ArithBoolBinaryOp LT (<) (<) (<) lhs rhs
 
     override this.OnLessThanOrEqual(lhs, rhs) =
-        this.arithBoolBinaryOp LTE (<=) (<=) (<=) lhs rhs
+        this.ArithBoolBinaryOp LTE (<=) (<=) (<=) lhs rhs
 
     override this.OnGreaterThan(lhs, rhs) =
-        this.arithBoolBinaryOp GT (>) (>) (>) lhs rhs
+        this.ArithBoolBinaryOp GT (>) (>) (>) lhs rhs
 
     override this.OnGreaterThanOrEqual(lhs, rhs) =
-        this.arithBoolBinaryOp GTE (>=) (>=) (>=) lhs rhs
+        this.ArithBoolBinaryOp GTE (>=) (>=) (>=) lhs rhs
 
     override this.OnLogicalAnd(lhs, rhs) =
-        let lhs = this.simplify lhs
+        let lhs = this.Simplify lhs
 
         match lhs.Expression with
-        | BoolLiteral true -> (this.simplify rhs).Expression
+        | BoolLiteral true -> (this.Simplify rhs).Expression
         | BoolLiteral false -> BoolLiteral false
-        | _ -> AND(lhs, this.simplify rhs)
+        | _ -> AND(lhs, this.Simplify rhs)
 
     override this.OnLogicalOr(lhs, rhs) =
-        let lhs = this.simplify lhs
+        let lhs = this.Simplify lhs
 
         match lhs.Expression with
         | BoolLiteral true -> BoolLiteral true
-        | BoolLiteral false -> (this.simplify rhs).Expression
-        | _ -> OR(lhs, this.simplify rhs)
+        | BoolLiteral false -> (this.Simplify rhs).Expression
+        | _ -> OR(lhs, this.Simplify rhs)
 
     // - simplifies addition of two constants (integers, big integers,
     //   doubles, arrays, and strings) into single constant
@@ -409,7 +410,7 @@ and private ExpressionKindEvaluator
     //     0 + x = x
     //     x + 0 = x
     override this.OnAddition(lhs, rhs) =
-        let lhs, rhs = this.simplify (lhs, rhs)
+        let lhs, rhs = this.Simplify(lhs, rhs)
 
         match lhs.Expression, rhs.Expression with
         | ValueArray a, ValueArray b -> ValueArray(a.AddRange b)
@@ -421,7 +422,7 @@ and private ExpressionKindEvaluator
         | op, DoubleLiteral 0.0
         | IntLiteral 0L, op
         | op, IntLiteral 0L -> op
-        | _ -> this.arithNumBinaryOp ADD (+) (+) (+) lhs rhs
+        | _ -> this.ArithNumBinaryOp ADD (+) (+) (+) lhs rhs
 
     // - simplifies subtraction of two constants into single constant
     // - rewrites (integers, big integers, and doubles)
@@ -429,7 +430,7 @@ and private ExpressionKindEvaluator
     //     0 - x = -x
     //     x - x = 0
     override this.OnSubtraction(lhs, rhs) =
-        let lhs, rhs = this.simplify (lhs, rhs)
+        let lhs, rhs = this.Simplify(lhs, rhs)
 
         match lhs.Expression, rhs.Expression with
         | op, BigIntLiteral zero when zero.IsZero -> op
@@ -443,8 +444,8 @@ and private ExpressionKindEvaluator
             | BigInt -> BigIntLiteral BigInteger.Zero
             | Double -> DoubleLiteral 0.0
             | Int -> IntLiteral 0L
-            | _ -> this.arithNumBinaryOp SUB (-) (-) (-) lhs rhs
-        | _ -> this.arithNumBinaryOp SUB (-) (-) (-) lhs rhs
+            | _ -> this.ArithNumBinaryOp SUB (-) (-) (-) lhs rhs
+        | _ -> this.ArithNumBinaryOp SUB (-) (-) (-) lhs rhs
 
     // - simplifies multiplication of two constants into single constant
     // - rewrites (integers, big integers, and doubles)
@@ -453,7 +454,7 @@ and private ExpressionKindEvaluator
     //     x * 1 = x
     //     1 * x = x
     override this.OnMultiplication(lhs, rhs) =
-        let lhs, rhs = this.simplify (lhs, rhs)
+        let lhs, rhs = this.Simplify(lhs, rhs)
 
         match lhs.Expression, rhs.Expression with
         | _, (BigIntLiteral zero)
@@ -468,20 +469,20 @@ and private ExpressionKindEvaluator
         | (DoubleLiteral 1.0), op
         | op, (IntLiteral 1L)
         | (IntLiteral 1L), op -> op
-        | _ -> this.arithNumBinaryOp MUL (*) (*) (*) lhs rhs
+        | _ -> this.ArithNumBinaryOp MUL (*) (*) (*) lhs rhs
 
     // - simplifies multiplication of two constants into single constant
     override this.OnDivision(lhs, rhs) =
-        let lhs, rhs = this.simplify (lhs, rhs)
+        let lhs, rhs = this.Simplify(lhs, rhs)
 
         match lhs.Expression, rhs.Expression with
         | op, (BigIntLiteral one) when one.IsOne -> op
         | op, (DoubleLiteral 1.0)
         | op, (IntLiteral 1L) -> op
-        | _ -> this.arithNumBinaryOp DIV (/) (/) (/) lhs rhs
+        | _ -> this.ArithNumBinaryOp DIV (/) (/) (/) lhs rhs
 
     override this.OnExponentiate(lhs, rhs) =
-        let lhs, rhs = this.simplify (lhs, rhs)
+        let lhs, rhs = this.Simplify(lhs, rhs)
 
         match lhs.Expression, rhs.Expression with
         | BigIntLiteral a, IntLiteral b -> BigIntLiteral(BigInteger.Pow(a, safeCastInt64 b))
@@ -489,32 +490,32 @@ and private ExpressionKindEvaluator
         | IntLiteral a, IntLiteral b -> IntLiteral(longPow a b)
         | _ -> POW(lhs, rhs)
 
-    override this.OnModulo(lhs, rhs) = this.intBinaryOp MOD (%) (%) lhs rhs
+    override this.OnModulo(lhs, rhs) = this.IntBinaryOp MOD (%) (%) lhs rhs
 
     override this.OnLeftShift(lhs, rhs) =
-        this.intBinaryOp LSHIFT (fun l r -> l <<< safeCastBigInt r) (fun l r -> l <<< safeCastInt64 r) lhs rhs
+        this.IntBinaryOp LSHIFT (fun l r -> l <<< safeCastBigInt r) (fun l r -> l <<< safeCastInt64 r) lhs rhs
 
     override this.OnRightShift(lhs, rhs) =
-        this.intBinaryOp RSHIFT (fun l r -> l >>> safeCastBigInt r) (fun l r -> l >>> safeCastInt64 r) lhs rhs
+        this.IntBinaryOp RSHIFT (fun l r -> l >>> safeCastBigInt r) (fun l r -> l >>> safeCastInt64 r) lhs rhs
 
     override this.OnBitwiseExclusiveOr(lhs, rhs) =
-        this.intBinaryOp BXOR (^^^) (^^^) lhs rhs
+        this.IntBinaryOp BXOR (^^^) (^^^) lhs rhs
 
     override this.OnBitwiseOr(lhs, rhs) =
-        this.intBinaryOp BOR (|||) (|||) lhs rhs
+        this.IntBinaryOp BOR (|||) (|||) lhs rhs
 
     override this.OnBitwiseAnd(lhs, rhs) =
-        this.intBinaryOp BAND (&&&) (&&&) lhs rhs
+        this.IntBinaryOp BAND (&&&) (&&&) lhs rhs
 
     override this.OnLogicalNot expr =
-        let expr = this.simplify expr
+        let expr = this.Simplify expr
 
         match expr.Expression with
         | BoolLiteral a -> BoolLiteral(not a)
         | _ -> NOT expr
 
     override this.OnNegative expr =
-        let expr = this.simplify expr
+        let expr = this.Simplify expr
 
         match expr.Expression with
         | BigIntLiteral a -> BigIntLiteral(-a)
@@ -523,7 +524,7 @@ and private ExpressionKindEvaluator
         | _ -> NEG expr
 
     override this.OnBitwiseNot expr =
-        let expr = this.simplify expr
+        let expr = this.Simplify expr
 
         match expr.Expression with
         | IntLiteral a -> IntLiteral(~~~a)

@@ -29,19 +29,19 @@ type Expression =
 /// A call to a quantum gate, with the given functors and arguments
 type GateCall =
     {
-        gate: QsQualifiedName
-        info: CallableInformation
-        adjoint: bool
-        controls: ImmutableArray<int>
-        arg: Expression
+        Gate: QsQualifiedName
+        Info: CallableInformation
+        Adjoint: bool
+        Controls: ImmutableArray<int>
+        Arg: Expression
     }
 
 /// A pure quantum circuit with arbitrarily many (non-qubit) parameters
 type Circuit =
     {
-        numQubits: int
-        numUnknownValues: int
-        gates: ImmutableArray<GateCall>
+        NumQubits: int
+        NumUnknownValues: int
+        Gates: ImmutableArray<GateCall>
     }
 
 /// Metadata used for constructing circuits.
@@ -49,10 +49,10 @@ type Circuit =
 /// In the future, this will include a map from all symbols to their Q# representation.
 type private CircuitContext =
     {
-        callables: ImmutableDictionary<QsQualifiedName, QsCallable>
-        distinctNames: Set<string>
-        qubits: ImmutableArray<TypedExpression>
-        unknownValues: ImmutableArray<TypedExpression>
+        Callables: ImmutableDictionary<QsQualifiedName, QsCallable>
+        DistinctNames: Set<string>
+        Qubits: ImmutableArray<TypedExpression>
+        UnknownValues: ImmutableArray<TypedExpression>
     }
 
 
@@ -92,7 +92,7 @@ let rec private toExpression (cc: CircuitContext, expr: TypedExpression) : (Circ
         | TypeKind.TupleType ts -> ts |> Seq.exists (fun t -> mightContainQubit t.Resolution)
         | TypeKind.UserDefinedType u ->
             let qualName = { Namespace = u.Namespace; Name = u.Name }
-            mightContainQubit (cc.callables.[qualName]).Signature.ArgumentType.Resolution
+            mightContainQubit (cc.Callables.[qualName]).Signature.ArgumentType.Resolution
         | _ -> false
 
     match expr.Expression with
@@ -117,14 +117,14 @@ let rec private toExpression (cc: CircuitContext, expr: TypedExpression) : (Circ
             | _ -> None)
             QubitArray
     | ExprKind.Identifier (LocalVariable name, _) when
-        expr.ResolvedType.Resolution = TypeKind.Qubit && cc.distinctNames.Contains name
+        expr.ResolvedType.Resolution = TypeKind.Qubit && cc.DistinctNames.Contains name
         ->
-        let newQubits, i = ensureMatchingIndex cc.qubits
-        Some({ cc with qubits = newQubits }, Qubit i)
+        let newQubits, i = ensureMatchingIndex cc.Qubits
+        Some({ cc with Qubits = newQubits }, Qubit i)
     | _ when mightContainQubit expr.ResolvedType.Resolution -> None
     | _ ->
-        let newUnknownValues, i = ensureMatchingIndex cc.unknownValues
-        Some({ cc with unknownValues = newUnknownValues }, UnknownValue i)
+        let newUnknownValues, i = ensureMatchingIndex cc.UnknownValues
+        Some({ cc with UnknownValues = newUnknownValues }, UnknownValue i)
 
 /// Converts a TypedExpression to a GateCall
 let private toGateCall (cc: CircuitContext, expr: TypedExpression) : (CircuitContext * GateCall) option =
@@ -133,7 +133,7 @@ let private toGateCall (cc: CircuitContext, expr: TypedExpression) : (CircuitCon
             match method.Expression with
             | AdjointApplication x ->
                 let! cc, result = helper cc x arg
-                return cc, { result with adjoint = not result.adjoint }
+                return cc, { result with Adjoint = not result.Adjoint }
             | ControlledApplication x ->
                 match arg.Expression with
                 | ExprKind.ValueTuple vt ->
@@ -146,20 +146,20 @@ let private toGateCall (cc: CircuitContext, expr: TypedExpression) : (CircuitCon
                         | _ -> None
 
                     let! cc, result = helper cc x vt.[1]
-                    return cc, { result with controls = controlQubits.AddRange result.controls }
+                    return cc, { result with Controls = controlQubits.AddRange result.Controls }
                 | _ -> return! None
             | Identifier (GlobalCallable name, _) ->
                 let! cc, argVal = toExpression (cc, arg)
-                let info = (cc.callables.[name]).Signature.Information
+                let info = (cc.Callables.[name]).Signature.Information
 
                 return
                     cc,
                     {
-                        gate = name
-                        info = info
-                        adjoint = false
-                        controls = ImmutableArray.Empty
-                        arg = argVal
+                        Gate = name
+                        Info = info
+                        Adjoint = false
+                        Controls = ImmutableArray.Empty
+                        Arg = argVal
                     }
             | _ -> return! None
         }
@@ -175,10 +175,10 @@ let private toCircuit callables distinctNames exprList : (Circuit * CircuitConte
         let ccRef =
             ref
                 {
-                    callables = callables
-                    distinctNames = distinctNames
-                    qubits = ImmutableArray.Empty
-                    unknownValues = ImmutableArray.Empty
+                    Callables = callables
+                    DistinctNames = distinctNames
+                    Qubits = ImmutableArray.Empty
+                    UnknownValues = ImmutableArray.Empty
                 }
 
         let outputRef = ref []
@@ -190,9 +190,9 @@ let private toCircuit callables distinctNames exprList : (Circuit * CircuitConte
 
         let circuit =
             {
-                numQubits = (!ccRef).qubits.Length
-                numUnknownValues = (!ccRef).unknownValues.Length
-                gates = ImmutableArray.CreateRange !outputRef
+                NumQubits = (!ccRef).Qubits.Length
+                NumUnknownValues = (!ccRef).UnknownValues.Length
+                Gates = ImmutableArray.CreateRange !outputRef
             }
 
         return circuit, !ccRef
@@ -213,7 +213,7 @@ let rec private fromExpression (cc: CircuitContext) (expr: Expression) : TypedEx
         | Tuple x -> ResolvedType.New(TupleType(x |> Seq.map getType |> ImmutableArray.CreateRange))
         | Qubit _ -> ResolvedType.New TypeKind.Qubit
         | QubitArray _ -> ResolvedType.New(ArrayType(ResolvedType.New TypeKind.Qubit))
-        | UnknownValue i -> cc.unknownValues.[i].ResolvedType
+        | UnknownValue i -> cc.UnknownValues.[i].ResolvedType
 
     match expr with
     | Literal (IntLiteral x) -> ExprKind.IntLiteral x |> wrapExpr Int
@@ -226,28 +226,28 @@ let rec private fromExpression (cc: CircuitContext) (expr: Expression) : TypedEx
         |> ImmutableArray.CreateRange
         |> ExprKind.ValueTuple
         |> wrapExpr (getType expr).Resolution
-    | Qubit i -> cc.qubits.[i]
-    | QubitArray x -> x |> Seq.map (fun i -> cc.qubits.[i]) |> buildArray TypeKind.Qubit
-    | UnknownValue i -> cc.unknownValues.[i]
+    | Qubit i -> cc.Qubits.[i]
+    | QubitArray x -> x |> Seq.map (fun i -> cc.Qubits.[i]) |> buildArray TypeKind.Qubit
+    | UnknownValue i -> cc.UnknownValues.[i]
 
 /// Returns the Q# expression correponding to the given gate call
 let private fromGateCall (cc: CircuitContext) (gc: GateCall) : TypedExpression =
-    let mutable arg = fromExpression cc gc.arg
+    let mutable arg = fromExpression cc gc.Arg
 
     let methodType =
         TypeKind.Operation((arg.ResolvedType, ResolvedType.New UnitType), CallableInformation.NoInformation)
 
-    let mutable method = wrapExpr methodType (Identifier(GlobalCallable gc.gate, Null))
+    let mutable method = wrapExpr methodType (Identifier(GlobalCallable gc.Gate, Null))
 
-    if gc.adjoint then method <- wrapExpr methodType (AdjointApplication method)
+    if gc.Adjoint then method <- wrapExpr methodType (AdjointApplication method)
 
-    if not gc.controls.IsEmpty then
+    if not gc.Controls.IsEmpty then
         let argType =
             TupleType(
                 ImmutableArray.Create(ResolvedType.New(ArrayType(ResolvedType.New TypeKind.Qubit)), arg.ResolvedType)
             )
 
-        arg <- wrapExpr argType (ValueTuple(ImmutableArray.Create(fromExpression cc (QubitArray gc.controls), arg)))
+        arg <- wrapExpr argType (ValueTuple(ImmutableArray.Create(fromExpression cc (QubitArray gc.Controls), arg)))
 
         let methodType =
             TypeKind.Operation((ResolvedType.New argType, ResolvedType.New UnitType), CallableInformation.NoInformation)
@@ -258,7 +258,7 @@ let private fromGateCall (cc: CircuitContext) (gc: GateCall) : TypedExpression =
 
 /// Returns the list of Q# expressions corresponding to the given circuit
 let private fromCircuit (cc: CircuitContext) (circuit: Circuit) =
-    Seq.map (fromGateCall cc) circuit.gates |> ImmutableArray.CreateRange
+    Seq.map (fromGateCall cc) circuit.Gates |> ImmutableArray.CreateRange
 
 
 /// Given a pure circuit, performs basic optimizations and returns the new circuit
@@ -266,12 +266,12 @@ let private optimizeCircuit (circuit: Circuit) : Circuit option =
     let mutable circuit = circuit
     let mutable i = 0
 
-    while i < circuit.gates.Length - 1 do
-        if circuit.gates.[i] = { circuit.gates.[i + 1] with adjoint = not circuit.gates.[i + 1].adjoint } then
-            circuit <- { circuit with gates = removeIndices [ i; i + 1 ] circuit.gates |> ImmutableArray.CreateRange }
-        elif circuit.gates.[i] = circuit.gates.[i + 1]
-             && circuit.gates.[i].info.InferredInformation.IsSelfAdjoint then
-            circuit <- { circuit with gates = removeIndices [ i; i + 1 ] circuit.gates |> ImmutableArray.CreateRange }
+    while i < circuit.Gates.Length - 1 do
+        if circuit.Gates.[i] = { circuit.Gates.[i + 1] with Adjoint = not circuit.Gates.[i + 1].Adjoint } then
+            circuit <- { circuit with Gates = removeIndices [ i; i + 1 ] circuit.Gates |> ImmutableArray.CreateRange }
+        elif circuit.Gates.[i] = circuit.Gates.[i + 1]
+             && circuit.Gates.[i].Info.InferredInformation.IsSelfAdjoint then
+            circuit <- { circuit with Gates = removeIndices [ i; i + 1 ] circuit.Gates |> ImmutableArray.CreateRange }
         else
             i <- i + 1
 

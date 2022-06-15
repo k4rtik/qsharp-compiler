@@ -12,18 +12,16 @@ open Microsoft.Quantum.QsCompiler.Transformations
 
 /// A SyntaxTreeTransformation that finds identifiers in each implementation that represent distict qubit values.
 /// Should be called at the specialization level, as it's meant to operate on a single implementation.
-type internal FindDistinctQubits private (_private_) =
+type internal FindDistinctQubits() as this =
     inherit Core.SyntaxTreeTransformation()
 
-    member val DistinctNames: Set<string> = Set.empty with get, set
+    do
+        this.Namespaces <- DistinctQubitsNamespaces(this)
+        this.StatementKinds <- DistinctQubitsStatementKinds(this)
+        this.Expressions <- Core.ExpressionTransformation(this, Core.TransformationOptions.Disabled)
+        this.Types <- Core.TypeTransformation(this, Core.TransformationOptions.Disabled)
 
-    internal new() as this =
-        new FindDistinctQubits("_private_")
-        then
-            this.Namespaces <- new DistinctQubitsNamespaces(this)
-            this.StatementKinds <- new DistinctQubitsStatementKinds(this)
-            this.Expressions <- new Core.ExpressionTransformation(this, Core.TransformationOptions.Disabled)
-            this.Types <- new Core.TypeTransformation(this, Core.TransformationOptions.Disabled)
+    member val DistinctNames: Set<string> = Set.empty with get, set
 
 /// private helper class for FindDistinctQubits
 and private DistinctQubitsNamespaces(parent: FindDistinctQubits) =
@@ -55,8 +53,13 @@ and private DistinctQubitsStatementKinds(parent: FindDistinctQubits) =
 
 /// A transformation that tracks what variables the transformed code could mutate.
 /// Should be called at the specialization level, as it's meant to operate on a single implementation.
-type internal MutationChecker private (_private_) =
+type internal MutationChecker() as this =
     inherit Core.SyntaxTreeTransformation()
+
+    do
+        this.StatementKinds <- MutationCheckerStatementKinds(this)
+        this.Expressions <- Core.ExpressionTransformation(this, Core.TransformationOptions.Disabled)
+        this.Types <- Core.TypeTransformation(this, Core.TransformationOptions.Disabled)
 
     member val DeclaredVariables: Set<string> = Set.empty with get, set
     member val MutatedVariables: Set<string> = Set.empty with get, set
@@ -64,12 +67,6 @@ type internal MutationChecker private (_private_) =
     /// Contains the set of variables that this code doesn't declare but does mutate.
     member this.ExternalMutations = this.MutatedVariables - this.DeclaredVariables
 
-    internal new() as this =
-        new MutationChecker("_private_")
-        then
-            this.StatementKinds <- new MutationCheckerStatementKinds(this)
-            this.Expressions <- new Core.ExpressionTransformation(this, Core.TransformationOptions.Disabled)
-            this.Types <- new Core.TypeTransformation(this, Core.TransformationOptions.Disabled)
 
 /// private helper class for MutationChecker
 and private MutationCheckerStatementKinds(parent: MutationChecker) =
@@ -97,19 +94,18 @@ and private MutationCheckerStatementKinds(parent: MutationChecker) =
 
 /// A transformation that counts how many times each local variable is referenced.
 /// Should be called at the specialization level, as it's meant to operate on a single implementation.
-type internal ReferenceCounter private (_private_) =
+type internal ReferenceCounter() as this =
     inherit Core.SyntaxTreeTransformation()
+
+    do
+        this.ExpressionKinds <- ReferenceCounterExpressionKinds(this)
+        this.Types <- Core.TypeTransformation(this, Core.TransformationOptions.Disabled)
 
     member val internal UsedVariables = Map.empty with get, set
 
     /// Returns the number of times the variable with the given name is referenced
     member this.NumberOfUses name = this.UsedVariables.TryFind name |? 0
 
-    internal new() as this =
-        new ReferenceCounter("_private_")
-        then
-            this.ExpressionKinds <- new ReferenceCounterExpressionKinds(this)
-            this.Types <- new Core.TypeTransformation(this, Core.TransformationOptions.Disabled)
 
 /// private helper class for ReferenceCounter
 and private ReferenceCounterExpressionKinds(parent: ReferenceCounter) =
@@ -137,12 +133,9 @@ type private ReplaceTypeParamsTypes(parent: Core.SyntaxTreeTransformation<_>) =
 /// A transformation that substitutes type parameters according to the given dictionary
 /// Should be called at the specialization level, as it's meant to operate on a single implementation.
 /// Does *not* update the type paremeter resolution dictionaries.
-type internal ReplaceTypeParams private (typeParams: ImmutableDictionary<_, ResolvedType>, _private_) =
+type internal ReplaceTypeParams(typeParams: ImmutableDictionary<_, ResolvedType>) as this =
     inherit Core.SyntaxTreeTransformation<ImmutableDictionary<QsQualifiedName * string, ResolvedType>>(typeParams)
-
-    internal new(typeParams: ImmutableDictionary<_, ResolvedType>) as this =
-        new ReplaceTypeParams(typeParams, "_private_")
-        then this.Types <- new ReplaceTypeParamsTypes(this)
+    do this.Types <- ReplaceTypeParamsTypes(this)
 
 
 /// private helper class for SideEffectChecker
@@ -180,8 +173,13 @@ and private SideEffectCheckerStatementKinds(parent: SideEffectChecker) =
         base.OnFailStatement stm
 
 /// A ScopeTransformation that tracks what side effects the transformed code could cause
-and internal SideEffectChecker private (_private_) =
+and internal SideEffectChecker() as this =
     inherit Core.SyntaxTreeTransformation()
+
+    do
+        this.ExpressionKinds <- SideEffectCheckerExpressionKinds(this)
+        this.StatementKinds <- SideEffectCheckerStatementKinds(this)
+        this.Types <- Core.TypeTransformation(this, Core.TransformationOptions.Disabled)
 
     /// Whether the transformed code might have any quantum side effects (such as calling operations)
     member val HasQuantum = false with get, set
@@ -191,13 +189,6 @@ and internal SideEffectChecker private (_private_) =
     member val HasInterrupts = false with get, set
     /// Whether the transformed code might output any messages to the console
     member val HasOutput = false with get, set
-
-    internal new() as this =
-        new SideEffectChecker("_private_")
-        then
-            this.ExpressionKinds <- new SideEffectCheckerExpressionKinds(this)
-            this.StatementKinds <- new SideEffectCheckerStatementKinds(this)
-            this.Types <- new Core.TypeTransformation(this, Core.TransformationOptions.Disabled)
 
 
 /// A ScopeTransformation that replaces one statement with zero or more statements
@@ -212,8 +203,7 @@ type internal StatementCollectorTransformation(parent: Core.SyntaxTreeTransforma
 
         let statements =
             scope.Statements
-            |> Seq.map this.OnStatement
-            |> Seq.map (fun x -> x.Statement)
+            |> Seq.map (fun s -> this.OnStatement(s).Statement)
             |> Seq.collect this.CollectStatements
             |> Seq.map wrapStmt
 
@@ -221,15 +211,13 @@ type internal StatementCollectorTransformation(parent: Core.SyntaxTreeTransforma
 
 
 /// A SyntaxTreeTransformation that removes all known symbols from anywhere in the AST
-type internal StripAllKnownSymbols(_private_) =
+type internal StripAllKnownSymbols() as this =
     inherit Core.SyntaxTreeTransformation()
 
-    internal new() as this =
-        new StripAllKnownSymbols("_private_")
-        then
-            this.Statements <- new StripAllKnownSymbolsStatements(this)
-            this.Expressions <- new Core.ExpressionTransformation(this, Core.TransformationOptions.Disabled)
-            this.Types <- new Core.TypeTransformation(this, Core.TransformationOptions.Disabled)
+    do
+        this.Statements <- StripAllKnownSymbolsStatements(this)
+        this.Expressions <- Core.ExpressionTransformation(this, Core.TransformationOptions.Disabled)
+        this.Types <- Core.TypeTransformation(this, Core.TransformationOptions.Disabled)
 
 /// private helper class for StripAllKnownSymbols
 and private StripAllKnownSymbolsStatements(parent: StripAllKnownSymbols) =

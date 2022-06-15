@@ -14,18 +14,16 @@ open Microsoft.Quantum.QsCompiler.Transformations
 
 
 /// The SyntaxTreeTransformation used to find and optimize pure circuits
-type PureCircuitFinder private (_private_: string) =
+type PureCircuitFinder(callables) as this =
     inherit TransformationBase()
 
-    member val internal DistinctQubitFinder = None with get, set
+    do
+        this.Namespaces <- PureCircuitFinderNamespaces(this)
+        this.Statements <- PureCircuitFinderStatements(this, callables)
+        this.Expressions <- Core.ExpressionTransformation(this, Core.TransformationOptions.Disabled)
+        this.Types <- Core.TypeTransformation(this, Core.TransformationOptions.Disabled)
 
-    new(callables) as this =
-        new PureCircuitFinder("_private_")
-        then
-            this.Namespaces <- new PureCircuitFinderNamespaces(this)
-            this.Statements <- new PureCircuitFinderStatements(this, callables)
-            this.Expressions <- new Core.ExpressionTransformation(this, Core.TransformationOptions.Disabled)
-            this.Types <- new Core.TypeTransformation(this, Core.TransformationOptions.Disabled)
+    member val internal DistinctQubitFinder = None with get, set
 
 /// private helper class for PureCircuitFinder
 and private PureCircuitFinderNamespaces(parent: PureCircuitFinder) =

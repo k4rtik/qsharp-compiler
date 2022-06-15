@@ -11,18 +11,16 @@ open Microsoft.Quantum.QsCompiler.Transformations
 
 
 /// The SyntaxTreeTransformation used to remove useless statements
-type VariableRemoval(_private_) =
+type VariableRemoval() as this =
     inherit TransformationBase()
 
-    member val internal ReferenceCounter = None with get, set
+    do
+        this.Namespaces <- VariableRemovalNamespaces(this)
+        this.StatementKinds <- VariableRemovalStatementKinds(this)
+        this.Expressions <- Core.ExpressionTransformation(this, Core.TransformationOptions.Disabled)
+        this.Types <- Core.TypeTransformation(this, Core.TransformationOptions.Disabled)
 
-    new() as this =
-        new VariableRemoval("_private_")
-        then
-            this.Namespaces <- new VariableRemovalNamespaces(this)
-            this.StatementKinds <- new VariableRemovalStatementKinds(this)
-            this.Expressions <- new Core.ExpressionTransformation(this, Core.TransformationOptions.Disabled)
-            this.Types <- new Core.TypeTransformation(this, Core.TransformationOptions.Disabled)
+    member val internal ReferenceCounter = None with get, set
 
 /// private helper class for VariableRemoval
 and private VariableRemovalNamespaces(parent: VariableRemoval) =

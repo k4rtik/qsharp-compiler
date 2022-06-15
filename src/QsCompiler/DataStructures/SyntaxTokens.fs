@@ -139,30 +139,27 @@ type LambdaKind =
 /// A lambda expression.
 type Lambda<'Expr, 'Type> =
     private
-        {
-            kind: LambdaKind
-            paramTuple: QsTuple<LocalVariableDeclaration<QsLocalSymbol, 'Type>>
-            body: 'Expr
-        }
+    | Lambda of kind: LambdaKind * paramTuple: QsTuple<LocalVariableDeclaration<QsLocalSymbol, 'Type>> * body: 'Expr
 
     /// Represents whether a lambda is a function or operation.
-    member lambda.Kind = lambda.kind
+    member lambda.Kind =
+        let (Lambda (kind = kind)) = lambda
+        kind
 
     /// The symbol tuple for the lambda's parameter.
-    member lambda.ArgumentTuple = lambda.paramTuple
+    member lambda.ArgumentTuple =
+        let (Lambda (paramTuple = paramTuple)) = lambda
+        paramTuple
 
     /// The body of the lambda.
-    member lambda.Body = lambda.body
+    member lambda.Body =
+        let (Lambda (body = body)) = lambda
+        body
 
 module Lambda =
     /// Creates a lambda expression.
     [<CompiledName "Create">]
-    let create kind paramTuple body =
-        {
-            kind = kind
-            paramTuple = paramTuple
-            body = body
-        }
+    let create kind paramTuple body = Lambda(kind, paramTuple, body)
 
     let createUnchecked kind paramTuple body =
         let variableDeclaration =
@@ -374,52 +371,48 @@ module AccessModifier =
 /// A callable declaration.
 type CallableDeclaration =
     private
-        {
-            name: QsSymbol
-            access: Access QsNullable
-            signature: CallableSignature
-        }
+    | CallableDeclaration of name: QsSymbol * access: Access QsNullable * signature: CallableSignature
 
     static member Create(name, access, signature) =
-        {
-            name = name
-            access = access
-            signature = signature
-        }
+        CallableDeclaration(name, access, signature)
 
     /// The name of the callable.
-    member callable.Name = callable.name
+    member callable.Name =
+        let (CallableDeclaration (name = name)) = callable
+        name
 
     /// The accessibility of the callable, or Null if the callable has the default accessibility.
-    member callable.Access = callable.access
+    member callable.Access =
+        let (CallableDeclaration (access = access)) = callable
+        access
 
     /// The signature of the callable.
-    member callable.Signature = callable.signature
+    member callable.Signature =
+        let (CallableDeclaration (signature = signature)) = callable
+        signature
 
 /// A type definition.
 type TypeDefinition =
     private
-        {
-            name: QsSymbol
-            access: Access QsNullable
-            underlyingType: (QsSymbol * QsType) QsTuple
-        }
+    | TypeDefinition of name: QsSymbol * access: Access QsNullable * underlyingType: (QsSymbol * QsType) QsTuple
 
     static member Create(name, access, underlyingType) =
-        {
-            name = name
-            access = access
-            underlyingType = underlyingType
-        }
+        TypeDefinition(name, access, underlyingType)
 
     /// The name of the type.
-    member typeDef.Name = typeDef.name
+    member typeDef.Name =
+        let (TypeDefinition (name = name)) = typeDef
+        name
 
     /// The accessibility of the type, or Null if the type has the default accessibility.
-    member typeDef.Access = typeDef.access
+    member typeDef.Access =
+        let (TypeDefinition (access = access)) = typeDef
+        access
 
     /// The type's underlying type.
-    member typeDef.UnderlyingType = typeDef.underlyingType
+    member typeDef.UnderlyingType =
+        let (TypeDefinition (underlyingType = underlyingType)) = typeDef
+        underlyingType
 
 type QsFragmentKind =
     | ExpressionStatement of QsExpression

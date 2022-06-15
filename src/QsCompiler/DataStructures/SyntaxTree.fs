@@ -239,24 +239,24 @@ type UserDefinedType =
 /// A resolved characteristic expression by construction never contains an empty or invalid set as inner expressions,
 /// and necessarily contains the property "Adjointable" if it contains the property "SelfAdjoint".
 type ResolvedCharacteristics =
+    // the private constructor enforces the guarantees given for any instance of ResolvedCharacteristics
+    // -> the static member New replaces the record constructor
     private
-        {
-            // the private constructor enforces the guarantees given for any instance of ResolvedCharacteristics
-            // -> the static member New replaces the record constructor
-            _Characteristics: CharacteristicsKind<ResolvedCharacteristics>
-        }
+    | ResolvedCharacteristics of kind: CharacteristicsKind<ResolvedCharacteristics>
 
     static member Empty = EmptySet |> ResolvedCharacteristics.New
 
     member this.AreInvalid =
-        match this._Characteristics with
+        match this.Expression with
         | InvalidSetExpr -> true
         | _ -> false
 
     /// Contains the fully resolved characteristics used to describe the properties of a Q# callable.
     /// By construction never contains an empty or invalid set as inner expressions,
     /// and necessarily contains the property "Adjointable" if it contains the property "SelfAdjoint".
-    member this.Expression = this._Characteristics
+    member this.Expression =
+        let (ResolvedCharacteristics kind) = this
+        kind
 
     /// Extracts all properties of a callable with the given characteristics using the given function to access the characteristics kind.
     /// Returns the extracted properties as Some if the extraction succeeds.
@@ -279,18 +279,19 @@ type ResolvedCharacteristics =
     static member private Simplify(ex: ResolvedCharacteristics) =
         let uniqueProps =
             ex
-            |> ResolvedCharacteristics.ExtractProperties(fun a -> a._Characteristics)
+            |> ResolvedCharacteristics.ExtractProperties(fun a -> a.Expression)
             |> Option.map (Seq.distinct >> Seq.toList)
         // it is fine (and necessary) to directly reassemble the unions,
         // since all property dependencies will already be satisfied (having been extracted from a ResolvedCharacteristics)
         let rec addProperties (current: ResolvedCharacteristics) =
             function
             | head :: tail ->
-                tail |> addProperties { _Characteristics = Union(current, { _Characteristics = SimpleSet head }) }
+                tail
+                |> addProperties (Union(current, SimpleSet head |> ResolvedCharacteristics) |> ResolvedCharacteristics)
             | _ -> current
 
         match uniqueProps with
-        | Some (head :: tail) -> tail |> addProperties { _Characteristics = SimpleSet head }
+        | Some (head :: tail) -> tail |> addProperties (SimpleSet head |> ResolvedCharacteristics)
         | _ -> ex
 
     /// Builds a ResolvedCharacteristics based on a compatible characteristics kind, and replaces the (inaccessible) record constructor.
@@ -298,21 +299,21 @@ type ResolvedCharacteristics =
     /// Incorporates all empty sets such that they do not ever occur as part of an encompassing expression.
     static member New kind =
         let isEmpty (ex: ResolvedCharacteristics) =
-            match ex._Characteristics with
+            match ex.Expression with
             | EmptySet -> true
             | _ -> false
 
         match kind with
-        | EmptySet -> { _Characteristics = EmptySet }
-        | SimpleSet property -> { _Characteristics = SimpleSet property }
+        | EmptySet -> ResolvedCharacteristics EmptySet
+        | SimpleSet property -> SimpleSet property |> ResolvedCharacteristics
         | Union (s1, s2) when s1 |> isEmpty -> s2
         | Union (s1, s2) when s2 |> isEmpty -> s1
-        | Union (s1, s2) when s1.AreInvalid || s2.AreInvalid -> { _Characteristics = InvalidSetExpr }
-        | Union (s1, s2) -> { _Characteristics = Union(s1, s2) } |> ResolvedCharacteristics.Simplify
-        | Intersection (s1, s2) when s1 |> isEmpty || s2 |> isEmpty -> { _Characteristics = EmptySet }
-        | Intersection (s1, s2) when s1.AreInvalid || s2.AreInvalid -> { _Characteristics = InvalidSetExpr }
-        | Intersection (s1, s2) -> { _Characteristics = Intersection(s1, s2) } |> ResolvedCharacteristics.Simplify
-        | InvalidSetExpr -> { _Characteristics = InvalidSetExpr }
+        | Union (s1, s2) when s1.AreInvalid || s2.AreInvalid -> ResolvedCharacteristics InvalidSetExpr
+        | Union (s1, s2) -> Union(s1, s2) |> ResolvedCharacteristics |> ResolvedCharacteristics.Simplify
+        | Intersection (s1, s2) when s1 |> isEmpty || s2 |> isEmpty -> ResolvedCharacteristics EmptySet
+        | Intersection (s1, s2) when s1.AreInvalid || s2.AreInvalid -> ResolvedCharacteristics InvalidSetExpr
+        | Intersection (s1, s2) -> Intersection(s1, s2) |> ResolvedCharacteristics |> ResolvedCharacteristics.Simplify
+        | InvalidSetExpr -> ResolvedCharacteristics InvalidSetExpr
 
     /// <summary>
     /// Given the resolved characteristics of a set of specializations,
@@ -325,12 +326,12 @@ type ResolvedCharacteristics =
             | [] -> current
             | head :: tail ->
                 // todo: if we support parameterizing over characteristics, we need to replace them in head by their worst-case value
-                tail |> common { _Characteristics = Intersection(current, head) }
+                tail |> common (Intersection(current, head) |> ResolvedCharacteristics)
 
-        if characteristics |> List.exists (fun a -> a._Characteristics = EmptySet) then
-            { _Characteristics = EmptySet }
+        if characteristics |> List.exists (fun a -> a.Expression = EmptySet) then
+            ResolvedCharacteristics EmptySet
         elif characteristics |> List.exists (fun a -> a.AreInvalid) then
-            { _Characteristics = InvalidSetExpr }
+            ResolvedCharacteristics InvalidSetExpr
         else
             match characteristics with
             | [] -> ArgumentException "cannot determine common information for an empty sequence" |> raise
@@ -339,7 +340,7 @@ type ResolvedCharacteristics =
     /// Builds a ResolvedCharacteristics that represents the given transformation properties.
     static member FromProperties props =
         let addProperty prop a =
-            { _Characteristics = Union(a, SimpleSet prop |> ResolvedCharacteristics.New) }
+            Union(a, SimpleSet prop |> ResolvedCharacteristics.New) |> ResolvedCharacteristics
 
         let rec addProperties (current: ResolvedCharacteristics) =
             function
@@ -357,7 +358,7 @@ type ResolvedCharacteristics =
     /// The properties cannot be determined either because the characteristics expression contains unresolved parameters or is invalid.
     /// </exception>
     member this.GetProperties() =
-        match ResolvedCharacteristics.ExtractProperties(fun ex -> ex._Characteristics) this with
+        match ResolvedCharacteristics.ExtractProperties(fun (ex: ResolvedCharacteristics) -> ex.Expression) this with
         | Some props -> props.ToImmutableHashSet()
         | None -> InvalidOperationException "properties cannot be determined" |> raise
 
@@ -369,7 +370,7 @@ type ResolvedCharacteristics =
             | Adjointable -> Some Adjoint
             | Controllable -> Some Controlled
 
-        match ResolvedCharacteristics.ExtractProperties(fun ex -> ex._Characteristics) this with
+        match ResolvedCharacteristics.ExtractProperties(fun (ex: ResolvedCharacteristics) -> ex.Expression) this with
         | Some props -> (props |> Seq.choose getFunctor).ToImmutableHashSet() |> Value
         | None -> Null
 
@@ -479,34 +480,37 @@ module TypeRange =
 [<CustomComparison>]
 type ResolvedType =
     private
-        {
-            kind: QsTypeKind<ResolvedType, UserDefinedType, QsTypeParameter, CallableInformation>
-            range: TypeRange
-        }
+    | ResolvedType of
+        kind: QsTypeKind<ResolvedType, UserDefinedType, QsTypeParameter, CallableInformation> *
+        range: TypeRange
 
     interface ITuple
 
     interface IComparable with
         member this.CompareTo that =
             match that with
-            | :? ResolvedType as that -> compare this.kind that.kind
+            | :? ResolvedType as that -> compare this.Resolution that.Resolution
             | _ -> ArgumentException "Types are different." |> raise
 
     override this.Equals that =
         match that with
-        | :? ResolvedType as that -> this.kind = that.kind
+        | :? ResolvedType as that -> this.Resolution = that.Resolution
         | _ -> false
 
-    override this.GetHashCode() = hash this.kind
+    override this.GetHashCode() = hash this.Resolution
 
     /// Contains the fully resolved Q# type,
     /// where type parameters are represented as QsTypeParameters containing their origin (the namespace and the callable they belong to) and their name,
     /// and user defined types are resolved to their fully qualified name.
     /// By construction never contains any arity-0 or arity-1 tuple types.
-    member this.Resolution = this.kind
+    member this.Resolution =
+        let (ResolvedType (kind = kind)) = this
+        kind
 
     /// The source code range where this type originated. Range is ignored when comparing resolved types.
-    member this.Range = this.range
+    member this.Range =
+        let (ResolvedType (range = range)) = this
+        range
 
 module ResolvedType =
     /// <summary>
@@ -525,20 +529,21 @@ module ResolvedType =
     /// <exception cref="ArgumentException"><paramref name="kind"/> is an empty tuple.</exception>
     [<CompiledName "Create">]
     let create range kind =
-        { kind = normalizeTuple kind; range = range }
+        ResolvedType(normalizeTuple kind, range)
 
     /// <summary>
     /// Replaces the type kind of <paramref name="resolvedType"/> with <paramref name="kind"/>.
     /// </summary>
     [<CompiledName "WithKind">]
-    let withKind kind resolvedType =
-        { resolvedType with ResolvedType.kind = normalizeTuple kind }
+    let withKind kind (resolvedType: ResolvedType) =
+        ResolvedType(normalizeTuple kind, resolvedType.Range)
 
     /// <summary>
     /// Replaces the range of <paramref name="resolvedType"/> with <paramref name="range"/>.
     /// </summary>
     [<CompiledName "WithRange">]
-    let withRange range resolvedType = { resolvedType with range = range }
+    let withRange range (resolvedType: ResolvedType) =
+        ResolvedType(resolvedType.Resolution, range)
 
     /// <summary>
     /// Recursively replaces every range in <paramref name="resolvedType"/> with <paramref name="range"/>.
@@ -631,29 +636,30 @@ type TypedExpression =
 /// Fully resolved Q# initializer expression.
 /// Initializer expressions are used (only) within Q# binding scopes, and trigger the allocation or borrowing of qubits on the target machine.
 type ResolvedInitializer =
+    // the private constructor enforces that the guarantees given for any instance of ResolvedInitializer
+    // -> the static member New replaces the record constructor
     private
-        {
-            // the private constructor enforces that the guarantees given for any instance of ResolvedInitializer
-            // -> the static member New replaces the record constructor
-            kind: QsInitializerKind<ResolvedInitializer, TypedExpression>
-            resolvedType: ResolvedType
-        }
+    | ResolvedInitializer of kind: QsInitializerKind<ResolvedInitializer, TypedExpression> * ty: ResolvedType
 
     interface ITuple
 
     /// Contains the fully resolved Q# initializer.
     /// By construction never contains any arity-0 or arity-1 tuple types.
-    member this.Resolution = this.kind
+    member this.Resolution =
+        let (ResolvedInitializer (kind = kind)) = this
+        kind
 
     /// the fully resolved Q# type of the initializer.
-    member this.Type = this.resolvedType
+    member this.Type =
+        let (ResolvedInitializer (ty = ty)) = this
+        ty
 
 module ResolvedInitializer =
     let create range kind =
         let arrayType = Qubit |> ResolvedType.create range |> ArrayType |> ResolvedType.create range
 
         let tupleType =
-            Seq.map (fun init -> init.resolvedType)
+            Seq.map (fun (init: ResolvedInitializer) -> init.Type)
             >> ImmutableArray.CreateRange
             >> TupleType
             >> ResolvedType.create range
@@ -662,10 +668,10 @@ module ResolvedInitializer =
         | QsInitializerKind.QubitTupleAllocation items when items.IsEmpty ->
             ArgumentException "Tuple initializer is empty." |> raise
         | QsInitializerKind.QubitTupleAllocation items when items.Length = 1 -> items.[0]
-        | QsInitializerKind.QubitTupleAllocation items -> { kind = kind; resolvedType = tupleType items }
-        | QsInitializerKind.QubitRegisterAllocation _ -> { kind = kind; resolvedType = arrayType }
-        | QsInitializerKind.SingleQubitAllocation -> { kind = kind; resolvedType = ResolvedType.create range Qubit }
-        | QsInitializerKind.InvalidInitializer -> { kind = kind; resolvedType = ResolvedType.create range InvalidType }
+        | QsInitializerKind.QubitTupleAllocation items -> ResolvedInitializer(kind, tupleType items)
+        | QsInitializerKind.QubitRegisterAllocation _ -> ResolvedInitializer(kind, arrayType)
+        | QsInitializerKind.SingleQubitAllocation -> ResolvedInitializer(kind, ResolvedType.create range Qubit)
+        | QsInitializerKind.InvalidInitializer -> ResolvedInitializer(kind, ResolvedType.create range InvalidType)
 
 type ResolvedInitializer with
     /// <summary>

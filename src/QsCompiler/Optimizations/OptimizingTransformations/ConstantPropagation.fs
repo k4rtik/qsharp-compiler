@@ -18,14 +18,16 @@ open Microsoft.Quantum.QsCompiler.Transformations
 type ConstantPropagation(callables) as this =
     inherit TransformationBase()
 
+    let constants = Dictionary()
+
     do
         this.Namespaces <- ConstantPropagationNamespaces(this)
         this.StatementKinds <- ConstantPropagationStatementKinds(this, callables)
-        this.Expressions <- ExpressionEvaluator(callables, this.Constants, 1000).Expressions
+        this.Expressions <- ExpressionEvaluator(callables, constants, 1000).Expressions
         this.Types <- Core.TypeTransformation(this, Core.TransformationOptions.Disabled)
 
     /// The current dictionary that maps variables to the values we substitute for them
-    member val Constants = new Dictionary<string, TypedExpression>()
+    member _.Constants = constants
 
 /// private helper class for ConstantPropagation
 and private ConstantPropagationNamespaces(parent: ConstantPropagation) =

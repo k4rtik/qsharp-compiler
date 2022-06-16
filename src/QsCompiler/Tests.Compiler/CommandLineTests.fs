@@ -181,8 +181,8 @@ let ``lift lambdas by default`` () =
 [<Fact>]
 let ``find path relative`` () =
     let fullPath = Path.Combine(Path.GetFullPath "alpha", "beta", "c", "test-path.qs")
-    let options = new BuildCompilation.BuildOptions()
-    let id = CompilationUnitManager.GetFileId(new Uri(fullPath))
+    let options = BuildCompilation.BuildOptions()
+    let id = CompilationUnitManager.GetFileId(Uri(fullPath))
     let expected = Path.Combine(Path.GetFullPath "alpha", "beta", "c", "test-path.g.cs")
     let actual = CompilationLoader.GeneratedFile(id, options.OutputFolder, ".g.cs")
     Assert.Equal(expected, actual)
@@ -190,9 +190,9 @@ let ``find path relative`` () =
 [<Fact>]
 let ``find path relative to outputfolder`` () =
     let fullPath = Path.Combine(Path.GetFullPath "alpha", "beta", "c", "test-path.qs")
-    let options = new BuildCompilation.BuildOptions()
+    let options = BuildCompilation.BuildOptions()
     options.OutputFolder <- Path.Combine(pathRoot, "foo", "bar")
-    let id = CompilationUnitManager.GetFileId(new Uri(fullPath))
+    let id = CompilationUnitManager.GetFileId(Uri(fullPath))
     let expected = Path.Combine(pathRoot, "foo", "bar", "alpha", "beta", "c", "test-path.g.cs")
     let actual = CompilationLoader.GeneratedFile(id, options.OutputFolder, ".g.cs")
     Assert.Equal(expected, actual)
@@ -200,9 +200,9 @@ let ``find path relative to outputfolder`` () =
 [<Fact>]
 let ``find path relative to relative outputfolder`` () =
     let fullPath = Path.Combine(Path.GetFullPath "alpha", "beta", "c", "test-path.qs")
-    let options = new BuildCompilation.BuildOptions()
+    let options = BuildCompilation.BuildOptions()
     options.OutputFolder <- Path.Combine("..", "foo", "bar")
-    let id = CompilationUnitManager.GetFileId(new Uri(fullPath))
+    let id = CompilationUnitManager.GetFileId(Uri(fullPath))
     let expected = Path.Combine(parentDir, "foo", "bar", "alpha", "beta", "c", "test-path.g.cs")
     let actual = CompilationLoader.GeneratedFile(id, options.OutputFolder, ".g.cs")
     Assert.Equal(expected, actual)
@@ -211,8 +211,8 @@ let ``find path relative to relative outputfolder`` () =
 let ``find path absolute`` () =
     let fileName = Path.Combine(pathRoot, "alpha", "beta", "c", "test-path.qs")
     let fullPath = Path.GetFullPath fileName
-    let options = new BuildCompilation.BuildOptions()
-    let id = CompilationUnitManager.GetFileId(new Uri(fullPath))
+    let options = BuildCompilation.BuildOptions()
+    let id = CompilationUnitManager.GetFileId(Uri(fullPath))
     let expected = Path.GetFullPath "test-path.g.cs"
     let actual = CompilationLoader.GeneratedFile(id, options.OutputFolder, ".g.cs")
     Assert.Equal(expected, actual)
@@ -220,9 +220,9 @@ let ``find path absolute`` () =
 [<Fact>]
 let ``find path absolute to outputfolder`` () =
     let fullPath = Path.Combine(pathRoot, "alpha", "beta", "c", "test-path.qs")
-    let options = new BuildCompilation.BuildOptions()
+    let options = BuildCompilation.BuildOptions()
     options.OutputFolder <- Path.Combine(pathRoot, "foo", "bar")
-    let id = CompilationUnitManager.GetFileId(new Uri(fullPath))
+    let id = CompilationUnitManager.GetFileId(Uri(fullPath))
     let expected = Path.Combine(pathRoot, "foo", "bar", "test-path.g.cs")
     let actual = CompilationLoader.GeneratedFile(id, options.OutputFolder, ".g.cs")
     Assert.Equal(expected, actual)
@@ -230,8 +230,8 @@ let ``find path absolute to outputfolder`` () =
 [<Fact>]
 let ``find path relative to here`` () =
     let fullPath = Path.Combine(Path.GetFullPath "alpha", "beta", "c", "test-path.qs")
-    let options = new BuildCompilation.BuildOptions()
-    let id = CompilationUnitManager.GetFileId(new Uri(fullPath))
+    let options = BuildCompilation.BuildOptions()
+    let id = CompilationUnitManager.GetFileId(Uri(fullPath))
     let expected = Path.Combine(Path.GetFullPath "alpha", "beta", "c", "test-path.g.cs")
     let actual = CompilationLoader.GeneratedFile(id, options.OutputFolder, ".g.cs")
     Assert.Equal(expected, actual)
@@ -239,8 +239,8 @@ let ``find path relative to here`` () =
 [<Fact>]
 let ``find path relative with spaces`` () =
     let fullPath = Path.Combine(Path.GetFullPath "alpha", "some beta", "c", "test 00.qs")
-    let options = new BuildCompilation.BuildOptions()
-    let id = CompilationUnitManager.GetFileId(new Uri(fullPath))
+    let options = BuildCompilation.BuildOptions()
+    let id = CompilationUnitManager.GetFileId(Uri(fullPath))
     let expected = Path.Combine(Path.GetFullPath "alpha", "some beta", "c", "test 00.g.cs")
     let actual = CompilationLoader.GeneratedFile(id, options.OutputFolder, ".g.cs")
     Assert.Equal(expected, actual)
@@ -248,9 +248,9 @@ let ``find path relative with spaces`` () =
 [<Fact>]
 let ``find path relative to outputfolder with spaces`` () =
     let fullPath = Path.Combine(Path.GetFullPath "alpha", "some beta", "c", "test 00.qs")
-    let options = new BuildCompilation.BuildOptions()
+    let options = BuildCompilation.BuildOptions()
     options.OutputFolder <- Path.Combine(pathRoot, "foo", "some bar")
-    let id = CompilationUnitManager.GetFileId(new Uri(fullPath))
+    let id = CompilationUnitManager.GetFileId(Uri(fullPath))
 
     let expected =
         Path.GetFullPath(Path.Combine(pathRoot, "foo", "some bar", "alpha", "some beta", "c", "test 00.g.cs"))
@@ -261,9 +261,9 @@ let ``find path relative to outputfolder with spaces`` () =
 [<Fact>]
 let ``find path relative to relative outputfolder with spaces`` () =
     let fullPath = Path.Combine(Path.GetFullPath "alpha", "some beta", "c", "test 00.qs")
-    let options = new BuildCompilation.BuildOptions()
+    let options = BuildCompilation.BuildOptions()
     options.OutputFolder <- Path.Combine("..", "some foo", "bar")
-    let id = CompilationUnitManager.GetFileId(new Uri(fullPath))
+    let id = CompilationUnitManager.GetFileId(Uri(fullPath))
     let expected = Path.Combine(parentDir, "some foo", "bar", "alpha", "some beta", "c", "test 00.g.cs")
     let actual = CompilationLoader.GeneratedFile(id, options.OutputFolder, ".g.cs")
     Assert.Equal(expected, actual)
@@ -271,8 +271,8 @@ let ``find path relative to relative outputfolder with spaces`` () =
 [<Fact>]
 let ``find path absolute with spaces`` () =
     let fullPath = Path.Combine(pathRoot, "alpha", "some beta", "c", "test 02.qs")
-    let options = new BuildCompilation.BuildOptions()
-    let id = CompilationUnitManager.GetFileId(new Uri(fullPath))
+    let options = BuildCompilation.BuildOptions()
+    let id = CompilationUnitManager.GetFileId(Uri(fullPath))
     let expected = Path.GetFullPath "test 02.g.cs"
     let actual = CompilationLoader.GeneratedFile(id, options.OutputFolder, ".g.cs")
     Assert.Equal(expected, actual)
@@ -280,9 +280,9 @@ let ``find path absolute with spaces`` () =
 [<Fact>]
 let ``find path absolute to outputfolder with spaces`` () =
     let fullPath = Path.Combine(pathRoot, "alpha", "some beta", "c", "test 02.qs")
-    let options = new BuildCompilation.BuildOptions()
+    let options = BuildCompilation.BuildOptions()
     options.OutputFolder <- Path.Combine(pathRoot, "foo", "some bar")
-    let id = CompilationUnitManager.GetFileId(new Uri(fullPath))
+    let id = CompilationUnitManager.GetFileId(Uri(fullPath))
     let expected = Path.Combine(pathRoot, "foo", "some bar", "test 02.g.cs")
     let actual = CompilationLoader.GeneratedFile(id, options.OutputFolder, ".g.cs")
     Assert.Equal(expected, actual)
@@ -290,8 +290,8 @@ let ``find path absolute to outputfolder with spaces`` () =
 [<Fact>]
 let ``find path relative to here with spaces`` () =
     let fullPath = Path.Combine(Path.GetFullPath "alpha", "some beta", "c", "test 03.qs")
-    let options = new BuildCompilation.BuildOptions()
-    let id = CompilationUnitManager.GetFileId(new Uri(fullPath))
+    let options = BuildCompilation.BuildOptions()
+    let id = CompilationUnitManager.GetFileId(Uri(fullPath))
     let expected = Path.Combine(Path.GetFullPath "alpha", "some beta", "c", "test 03.g.cs")
     let actual = CompilationLoader.GeneratedFile(id, options.OutputFolder, ".g.cs")
     Assert.Equal(expected, actual)

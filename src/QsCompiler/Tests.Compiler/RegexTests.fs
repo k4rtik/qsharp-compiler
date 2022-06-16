@@ -5,7 +5,6 @@ module Microsoft.Quantum.QsCompiler.Testing.RegexTests
 
 open Xunit
 open Microsoft.Quantum.QsCompiler.CommandLineCompiler
-open Microsoft.Quantum.QsCompiler.DataTypes
 open Microsoft.Quantum.QsCompiler.Testing.TestUtils
 open Microsoft.Quantum.QsCompiler.Transformations.SearchAndReplace
 
@@ -64,7 +63,7 @@ let ``Replace array item delimeters`` () =
 
 [<Fact>]
 let ``Strip unique variable name resolution`` () =
-    let NameResolution = new UniqueVariableNames()
+    let nameResolution = UniqueVariableNames()
 
     // name wrapping is added and stripped without verifying the validity of the variable name
     let origNames =
@@ -77,24 +76,20 @@ let ``Strip unique variable name resolution`` () =
             "'TName"
         ]
 
-    origNames
-    |> List.map (fun var -> var, UniqueVariableNames.StripUniqueName var)
-    |> List.iter Assert.Equal
+    for name in origNames do
+        Assert.Equal(name, UniqueVariableNames.StripUniqueName name)
 
-    origNames
-    |> List.map NameResolution.SharedState.GenerateUniqueName
-    |> List.map (fun unique -> unique, NameResolution.SharedState.GenerateUniqueName unique)
-    |> List.map (fun (unique, twiceWrapped) -> unique, UniqueVariableNames.StripUniqueName twiceWrapped)
-    |> List.iter Assert.Equal
+    for name in origNames do
+        let unique = nameResolution.SharedState.GenerateUniqueName name
+        let twiceWrapped = nameResolution.SharedState.GenerateUniqueName unique
+        Assert.Equal(unique, UniqueVariableNames.StripUniqueName twiceWrapped)
 
-    origNames
-    |> List.map (fun var -> var, NameResolution.SharedState.GenerateUniqueName var)
-    |> List.map (fun (var, unique) -> var, NameResolution.SharedState.GenerateUniqueName unique)
-    |> List.map (fun (var, twiceWrapped) -> var, UniqueVariableNames.StripUniqueName twiceWrapped)
-    |> List.map (fun (var, unique) -> var, UniqueVariableNames.StripUniqueName unique)
-    |> List.iter Assert.Equal
+    for name in origNames do
+        let unique = nameResolution.SharedState.GenerateUniqueName name
+        let twiceWrapped = nameResolution.SharedState.GenerateUniqueName unique
+        let unique' = UniqueVariableNames.StripUniqueName twiceWrapped
+        Assert.Equal(name, UniqueVariableNames.StripUniqueName unique')
 
-    origNames
-    |> List.map (fun var -> var, NameResolution.SharedState.GenerateUniqueName var)
-    |> List.map (fun (var, unique) -> var, UniqueVariableNames.StripUniqueName unique)
-    |> List.iter Assert.Equal
+    for name in origNames do
+        let unique = nameResolution.SharedState.GenerateUniqueName name
+        Assert.Equal(name, UniqueVariableNames.StripUniqueName unique)

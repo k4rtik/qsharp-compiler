@@ -391,7 +391,7 @@ let private driverSettings context =
         |> immutableList
 
     let assemblyConstant defaultValue name =
-        context.assemblyConstants.TryGetValue name
+        context.AssemblyConstants.TryGetValue name
         |> (fun (_, value) -> if String.IsNullOrWhiteSpace value then defaultValue else value)
 
     let defaultSimulator =

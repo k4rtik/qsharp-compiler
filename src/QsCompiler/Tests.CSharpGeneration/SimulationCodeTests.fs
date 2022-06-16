@@ -147,14 +147,14 @@ namespace N1
     let globalContext = CodegenContext.Create syntaxTree
 
     let findCallable name =
-        match globalContext.byName.TryGetValue name with
+        match globalContext.ByName.TryGetValue name with
         | true, v -> v |> List.sort |> List.head
         | false, _ -> sprintf "no callable with name %s has been successfully compiled" name |> failwith
 
     let findUdt name =
-        let key = globalContext.allUdts.Keys |> Seq.sort |> Seq.find (fun n -> n.Name = name)
+        let key = globalContext.AllUdts.Keys |> Seq.sort |> Seq.find (fun n -> n.Name = name)
 
-        match globalContext.allUdts.TryGetValue key with
+        match globalContext.AllUdts.TryGetValue key with
         | true, v -> key.Namespace, v
         | false, _ -> sprintf "no type with name %s has been successfully compiled" name |> failwith
 
@@ -247,7 +247,7 @@ namespace N1
     let udt_InternalType = findUdt @"InternalType"
     let udt_NamedTuple = findUdt @"NamedTuple"
 
-    let createTestContext op = globalContext.setCallable op
+    let createTestContext op = globalContext.SetCallable op
 
 
     let testOneFile fileName =
@@ -337,7 +337,7 @@ namespace N1
     [<Fact>]
     let ``tupleBaseClassName test`` () =
         let testOne (_, udt) expected =
-            let context = (CodegenContext.Create syntaxTree).setUdt udt
+            let context = (CodegenContext.Create syntaxTree).SetUdt udt
             let actual = tupleBaseClassName context udt.Type
             Assert.Equal(expected |> clearFormatting, actual |> clearFormatting)
 
@@ -953,7 +953,7 @@ namespace N1
     [<Fact>]
     let ``buildOperationInfoProperty test`` () =
         let testOne (_, op) expectedCodeString =
-            let context = { createTestContext op with entryPoints = ImmutableArray.Create op.FullName }
+            let context = { createTestContext op with EntryPoints = ImmutableArray.Create op.FullName }
             let (_, operationName) = findClassName op
             let inType = op.Signature.ArgumentType |> roslynTypeName context
             let outType = op.Signature.ReturnType |> roslynTypeName context

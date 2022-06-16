@@ -45,17 +45,22 @@ jobs:
     vmImage: $(imageName)
 
 
-- job: Style
+- job: Lint
   steps:
-  - task: UseDotNet@2
-    displayName: Use .NET SDK 6.0.105
+  - displayName: Use .NET SDK 6.0.105
+    task: UseDotNet@2
     inputs:
       version: 6.0.105
 
-  - script: dotnet tool restore
-    displayName: Restore .NET tools
+  - displayName: Restore .NET tools
+    script: dotnet tool restore
 
-  - script: dotnet tool run fantomas -- --check --recurse .
-    displayName: Fantomas
+  - displayName: Fantomas
+    script: dotnet tool run fantomas -- --check --recurse .
+
+  - displayName: FSharpLint
+    script: >
+      dotnet tool run dotnet-fsharplint lint QsCompiler.sln
+      dotnet tool run dotnet-fsharplint lint QsFmt.sln
   pool:
     vmImage: windows-latest

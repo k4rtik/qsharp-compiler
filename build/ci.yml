@@ -59,8 +59,11 @@ jobs:
     displayName: Fantomas
 
   - script: |
-      dotnet tool run dotnet-fsharplint lint QsCompiler.sln
+      dotnet restore QsFmt.sln
       dotnet tool run dotnet-fsharplint lint QsFmt.sln
+
+      dotnet restore QsCompiler.sln
+      dotnet tool run dotnet-fsharplint lint QsCompiler.sln
     displayName: FSharpLint
   pool:
     vmImage: windows-latest

@@ -58,7 +58,7 @@ jobs:
   - script: dotnet tool run fantomas -- --check --recurse .
     displayName: Fantomas
 
-  - script: >
+  - script: |
       dotnet tool run dotnet-fsharplint lint QsCompiler.sln
       dotnet tool run dotnet-fsharplint lint QsFmt.sln
     displayName: FSharpLint

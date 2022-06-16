@@ -47,20 +47,20 @@ jobs:
 
 - job: Lint
   steps:
-  - displayName: Use .NET SDK 6.0.105
-    task: UseDotNet@2
+  - task: UseDotNet@2
+    displayName: Use .NET SDK 6.0.105
     inputs:
       version: 6.0.105
 
-  - displayName: Restore .NET tools
-    script: dotnet tool restore
+  - script: dotnet tool restore
+    displayName: Restore .NET tools
 
-  - displayName: Fantomas
-    script: dotnet tool run fantomas -- --check --recurse .
+  - script: dotnet tool run fantomas -- --check --recurse .
+    displayName: Fantomas
 
-  - displayName: FSharpLint
-    script: >
+  - script: >
       dotnet tool run dotnet-fsharplint lint QsCompiler.sln
       dotnet tool run dotnet-fsharplint lint QsFmt.sln
+    displayName: FSharpLint
   pool:
     vmImage: windows-latest

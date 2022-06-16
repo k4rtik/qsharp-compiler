@@ -10,7 +10,7 @@ module AutoPropertyTests =
     let ``property: read`` () =
         let m = ``property-get`` "string" "Name" [ ``public`` ] get [ ``return`` (Some(literal "")) ]
 
-        let actual = to_class_members_code [ m ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -29,7 +29,7 @@ module AutoPropertyTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
 
     [<Fact>]
@@ -38,7 +38,7 @@ module AutoPropertyTests =
 
         let m = ``property-arrow_get`` "string" "Name" [ ``public`` ] get (``=>`` (ident "s")) // (``() =>`` [] bodyBlock))
 
-        let actual = to_class_members_code [ m ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -51,7 +51,7 @@ module AutoPropertyTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
 
     [<Fact>]
@@ -66,7 +66,7 @@ module AutoPropertyTests =
                 set
                 [ statement ((ident "test") <-- (ident "value")) ]
 
-        let actual = to_class_members_code [ m ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -90,13 +90,13 @@ module AutoPropertyTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``auto property: read-only`` () =
         let m = propg "string" "Name" [ ``public`` ]
 
-        let actual = to_class_members_code [ m ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -112,13 +112,13 @@ module AutoPropertyTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``auto property: read-write`` () =
         let m = prop "string" "Name" [ ``public`` ]
 
-        let actual = to_class_members_code [ m ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -135,4 +135,4 @@ module AutoPropertyTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual

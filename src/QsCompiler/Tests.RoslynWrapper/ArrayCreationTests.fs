@@ -10,8 +10,8 @@ module ArrayCreationTests =
     [<Fact>]
     let ``array: new empty array`` () =
         let s = var "a" (``:=`` (``new array`` (Some "int") []))
-        let m = host_in_method "void" [ s ]
-        let actual = to_class_members_code [ m ]
+        let m = hostInMethod "void" [ s ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -27,7 +27,7 @@ module ArrayCreationTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
 
     [<Fact>]
@@ -36,8 +36,8 @@ module ArrayCreationTests =
         let elems = [ ident "a"; ident "b"; ident "c" ]
         let s1 = var "x" (``:=`` (``new array`` (Some "Test") elems))
         let s2 = var "y" (``:=`` (item (ident "x") [ literal 1 ]))
-        let m = host_in_method "void" [ s1; s2 ]
-        let actual = to_class_members_code [ m ]
+        let m = hostInMethod "void" [ s1; s2 ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -54,7 +54,7 @@ module ArrayCreationTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
 
     [<Fact>]
@@ -62,8 +62,8 @@ module ArrayCreationTests =
 
         let elems = [ literal 1; literal 2; literal 3 ]
         let s = var "a" (``:=`` (``new array`` (Some "int") elems))
-        let m = host_in_method "void" [ s ]
-        let actual = to_class_members_code [ m ]
+        let m = hostInMethod "void" [ s ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -79,14 +79,14 @@ module ArrayCreationTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
 
     [<Fact>]
     let ``array: new ranked array`` () =
         let s = var "a" (``:=`` (``new array ranked`` "int" [ (literal 5) ]))
-        let m = host_in_method "void" [ s ]
-        let actual = to_class_members_code [ m ]
+        let m = hostInMethod "void" [ s ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -102,13 +102,13 @@ module ArrayCreationTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``array: new multi-dimensional array`` () =
         let s = var "a" (``:=`` (``new array ranked`` "int" [ (literal 5); (literal 8) ]))
-        let m = host_in_method "void" [ s ]
-        let actual = to_class_members_code [ m ]
+        let m = hostInMethod "void" [ s ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -124,15 +124,15 @@ module ArrayCreationTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``array: typed array initialized with constants -short-`` () =
 
         let elems = [ literal 1; literal 2; literal 3 ]
         let s = ``typed array`` "int" "a" (Some(``:=`` (``new array`` None elems)))
-        let m = host_in_method "void" [ s ]
-        let actual = to_class_members_code [ m ]
+        let m = hostInMethod "void" [ s ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -148,13 +148,13 @@ module ArrayCreationTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``array: typed array -short-`` () =
         let s = ``typed array`` "int" "a" None
-        let m = host_in_method "void" [ s ]
-        let actual = to_class_members_code [ m ]
+        let m = hostInMethod "void" [ s ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -170,7 +170,7 @@ module ArrayCreationTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``array: new array as argument`` () =
@@ -179,8 +179,8 @@ module ArrayCreationTests =
         let arg1 = (``new array`` (Some "int") elems)
         let arg2 = (ident "p2") :> ExpressionSyntax
         let s = statement (invoke (ident "Apply") ``(`` [ arg1; arg2 ] ``)``)
-        let m = host_in_method "void" [ s ]
-        let actual = to_class_members_code [ m ]
+        let m = hostInMethod "void" [ s ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -196,4 +196,4 @@ module ArrayCreationTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual

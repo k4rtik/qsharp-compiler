@@ -16,7 +16,7 @@ module ConversionOperatorTests =
                 [ ``public``; ``static`` ]
                 (``=>`` (invoke ("value.ToString" |> ident) ``(`` [] ``)``))
 
-        let actual = to_class_members_code [ m ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -29,7 +29,7 @@ module ConversionOperatorTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``conversion operator: implicit with forced static`` () =
@@ -42,7 +42,7 @@ module ConversionOperatorTests =
                 [ ``public`` ]
                 (``=>`` (invoke ("value.ToString" |> ident) ``(`` [] ``)``))
 
-        let actual = to_class_members_code [ m ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -55,7 +55,7 @@ module ConversionOperatorTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``conversion operator: explicit`` () =
@@ -67,7 +67,7 @@ module ConversionOperatorTests =
                 ``)``
                 (``=>`` (invoke (ident "value.ToString") ``(`` [] ``)``))
 
-        let actual = to_class_members_code [ m ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -80,7 +80,7 @@ module ConversionOperatorTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
 
 
@@ -94,7 +94,7 @@ module ConversionOperatorTests =
                 ``)``
                 (``=>`` (``new`` (``type`` [ "C" ]) ``(`` [ ident "value" ] ``)``))
 
-        let actual = to_class_members_code [ m ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -107,4 +107,4 @@ module ConversionOperatorTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual

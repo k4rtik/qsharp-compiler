@@ -8,8 +8,8 @@ module TryCatchTests =
     [<Fact>]
     let ``expression: try catch`` () =
         let t = ``try`` [ statement (ident "a" <-- literal 42) ] [ catch (Some("Exception", "e")) [] ] None
-        let m = host_in_method "void" [ t ]
-        let actual = to_class_members_code [ m ]
+        let m = hostInMethod "void" [ t ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -31,7 +31,7 @@ module TryCatchTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
 
     [<Fact>]
@@ -45,8 +45,8 @@ module TryCatchTests =
                 (Some(``finally`` [ statement (invoke (ident "Apply") ``(`` [ ident "a" ] ``)``) ]))
 
         let r = ``return`` (Some(ident "a"))
-        let m = host_in_method "string" [ a; t; r ]
-        let actual = to_class_members_code [ m ]
+        let m = hostInMethod "string" [ a; t; r ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -72,7 +72,7 @@ module TryCatchTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``expression: try catch finally`` () =
@@ -89,8 +89,8 @@ module TryCatchTests =
                 ]
                 (Some(``finally`` [ statement (invoke (ident "Apply") ``(`` [ ident "a" ] ``)``) ]))
 
-        let m = host_in_method "void" [ a; t ]
-        let actual = to_class_members_code [ m ]
+        let m = hostInMethod "void" [ a; t ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -125,4 +125,4 @@ module TryCatchTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual

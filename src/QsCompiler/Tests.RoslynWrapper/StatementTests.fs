@@ -13,8 +13,8 @@ module StatementTests =
     let ``expression: new`` () =
         let t = generic "List" ``<<`` [ "int" ] ``>>``
         let s = ``new`` t ``(`` [] ``)``
-        let m = return_from_arrow_method (``type name`` t) s
-        let actual = to_class_members_code [ m ]
+        let m = returnFromArrowMethod (``type name`` t) s
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -27,13 +27,13 @@ module StatementTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``expression: new() with args`` () =
         let s = ``new`` (``type`` [ "System"; "String" ]) ``(`` [ literal "A" ] ``)``
-        let m = return_from_arrow_method "String" s
-        let actual = to_class_members_code [ m ]
+        let m = returnFromArrowMethod "String" s
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -46,15 +46,15 @@ module StatementTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``expression: new with initialization`` () =
         let elems = [ literal 1; literal 2; literal 3 ]
         let t = generic "List" ``<<`` [ "int" ] ``>>``
         let s = ``new init`` t ``(`` [] ``)`` ``{`` elems ``}``
-        let m = return_from_arrow_method (``type name`` t) s
-        let actual = to_class_members_code [ m ]
+        let m = returnFromArrowMethod (``type name`` t) s
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -68,15 +68,15 @@ module StatementTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``expression: tuple`` () =
 
         let elems = [ ident "a"; ident "b"; ident "c" ]
         let s1 = var "x" (``:=`` (tuple elems))
-        let m = host_in_method "void" [ s1 ]
-        let actual = to_class_members_code [ m ]
+        let m = hostInMethod "void" [ s1 ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -92,7 +92,7 @@ module StatementTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
 
     [<Fact>]
@@ -113,8 +113,8 @@ module StatementTests =
             ]
 
         let s1 = (deconstruct decl) <-- outerTuple |> statement
-        let m = host_in_method "void" [ s1 ]
-        let actual = to_class_members_code [ m ]
+        let m = hostInMethod "void" [ s1 ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -130,13 +130,13 @@ module StatementTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``statement: empty return`` () =
         let s = ``return`` None
-        let m = host_in_method "void" [ s ]
-        let actual = to_class_members_code [ m ]
+        let m = hostInMethod "void" [ s ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -152,14 +152,14 @@ module StatementTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
 
     [<Fact>]
     let ``statement: return value`` () =
         let s = ``return`` (Some <| literal 42)
-        let m = host_in_method "int" [ s ]
-        let actual = to_class_members_code [ m ]
+        let m = hostInMethod "int" [ s ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -175,15 +175,15 @@ module StatementTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``expression: assignment`` () =
         let target = ident "a"
         let source = literal 42
         let s = statement (target <-- source)
-        let m = host_in_method "void" [ s ]
-        let actual = to_class_members_code [ m ]
+        let m = hostInMethod "void" [ s ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -199,14 +199,14 @@ module StatementTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
 
     [<Fact>]
     let ``statement: empty throw`` () =
         let s = throw None
-        let m = host_in_method "void" [ s ]
-        let actual = to_class_members_code [ m ]
+        let m = hostInMethod "void" [ s ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -222,15 +222,15 @@ module StatementTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
 
     [<Fact>]
     let ``statement: throw exception`` () =
         let newException = ``new`` (``type`` [ "System"; "Exception" ]) ``(`` [] ``)``
         let s = throw <| Some newException
-        let m = host_in_method "int" [ s ]
-        let actual = to_class_members_code [ m ]
+        let m = hostInMethod "int" [ s ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -246,14 +246,14 @@ module StatementTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``expression: cast`` () =
         let expr = cast "float" (literal 42)
         let s = ((ident "a") <-- expr) |> statement
-        let m = host_in_method "int" [ s ]
-        let actual = to_class_members_code [ m ]
+        let m = hostInMethod "int" [ s ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -269,14 +269,14 @@ module StatementTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``expression: as`` () =
         let expr = ``as`` "float" (ident "b")
         let s = ((ident "a") <-- expr) |> statement
-        let m = host_in_method "int" [ s ]
-        let actual = to_class_members_code [ m ]
+        let m = hostInMethod "int" [ s ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -292,14 +292,14 @@ module StatementTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``expression: |~>`` () =
         let expr = (ident "b") |~> "float"
         let s = ((ident "a") <-- expr) |> statement
-        let m = host_in_method "int" [ s ]
-        let actual = to_class_members_code [ m ]
+        let m = hostInMethod "int" [ s ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -315,14 +315,14 @@ module StatementTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``expression: is`` () =
         let expr = is "float" (ident "b")
         let s = ((ident "a") <-- expr) |> statement
-        let m = host_in_method "int" [ s ]
-        let actual = to_class_members_code [ m ]
+        let m = hostInMethod "int" [ s ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -338,14 +338,14 @@ module StatementTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``expression: ==`` () =
         let expr = (ident "b") .==. (literal 12)
         let s = ((ident "a") <-- expr) |> statement
-        let m = host_in_method "int" [ s ]
-        let actual = to_class_members_code [ m ]
+        let m = hostInMethod "int" [ s ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -361,14 +361,14 @@ module StatementTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``expression: &&`` () =
         let expr = (ident "b") .&&. (ident "c")
         let s = ((ident "a") <-- expr) |> statement
-        let m = host_in_method "int" [ s ]
-        let actual = to_class_members_code [ m ]
+        let m = hostInMethod "int" [ s ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -384,14 +384,14 @@ module StatementTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``expression: ||`` () =
         let expr = (ident "b") .||. (ident "c")
         let s = ((ident "a") <-- expr) |> statement
-        let m = host_in_method "int" [ s ]
-        let actual = to_class_members_code [ m ]
+        let m = hostInMethod "int" [ s ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -407,14 +407,14 @@ module StatementTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``expression: !=`` () =
         let expr = (ident "b") .!=. (literal 12)
         let s = ((ident "a") <-- expr) |> statement
-        let m = host_in_method "int" [ s ]
-        let actual = to_class_members_code [ m ]
+        let m = hostInMethod "int" [ s ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -430,14 +430,14 @@ module StatementTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``expression: >=`` () =
         let expr = (ident "b") .>=. (literal 12)
         let s = ((ident "a") <-- expr) |> statement
-        let m = host_in_method "int" [ s ]
-        let actual = to_class_members_code [ m ]
+        let m = hostInMethod "int" [ s ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -453,14 +453,14 @@ module StatementTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``expression: >`` () =
         let expr = (ident "b") .>. (literal 12)
         let s = ((ident "a") <-- expr) |> statement
-        let m = host_in_method "int" [ s ]
-        let actual = to_class_members_code [ m ]
+        let m = hostInMethod "int" [ s ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -476,14 +476,14 @@ module StatementTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``expression: <=`` () =
         let expr = (ident "b") .<=. (literal 12)
         let s = ((ident "a") <-- expr) |> statement
-        let m = host_in_method "int" [ s ]
-        let actual = to_class_members_code [ m ]
+        let m = hostInMethod "int" [ s ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -499,14 +499,14 @@ module StatementTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``expression: <`` () =
         let expr = (ident "b") .<. (literal 12)
         let s = ((ident "a") <-- expr) |> statement
-        let m = host_in_method "int" [ s ]
-        let actual = to_class_members_code [ m ]
+        let m = hostInMethod "int" [ s ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -522,14 +522,14 @@ module StatementTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``expression: ^`` () =
         let expr = (ident "b") <^> (literal 12)
         let s = ((ident "a") <-- expr) |> statement
-        let m = host_in_method "int" [ s ]
-        let actual = to_class_members_code [ m ]
+        let m = hostInMethod "int" [ s ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -545,14 +545,14 @@ module StatementTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``expression: ??`` () =
         let expr = (ident "b") <??> ``false``
         let s = ((ident "a") <-- expr) |> statement
-        let m = host_in_method "int" [ s ]
-        let actual = to_class_members_code [ m ]
+        let m = hostInMethod "int" [ s ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -568,14 +568,14 @@ module StatementTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``expression: paranthesize`` () =
         let expr = ``((`` ((ident "b") <^> (literal 12)) ``))``
         let s = ((ident "a") <-- expr) |> statement
-        let m = host_in_method "int" [ s ]
-        let actual = to_class_members_code [ m ]
+        let m = hostInMethod "int" [ s ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -591,14 +591,14 @@ module StatementTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``expression: !`` () =
         let expr = !((ident "b") <^> (literal 12))
         let s = ((ident "a") <-- expr) |> statement
-        let m = host_in_method "int" [ s ]
-        let actual = to_class_members_code [ m ]
+        let m = hostInMethod "int" [ s ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -614,13 +614,13 @@ module StatementTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``expression: member access`` () =
         let ma = (ident "System") <|.|> (ident "Console") <.> (ident "WriteLine", [ literal "Hello, World!" ])
-        let m = host_in_method "int" [ statement ma ]
-        let actual = to_class_members_code [ m ]
+        let m = hostInMethod "int" [ statement ma ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -636,13 +636,13 @@ module StatementTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``expression: member access safe`` () =
         let ma = (ident "System") <|?.|> (ident "Console") <?.> (ident "WriteLine", [ literal "Hello, World!" ])
-        let m = host_in_method "int" [ statement ma ]
-        let actual = to_class_members_code [ m ]
+        let m = hostInMethod "int" [ statement ma ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -658,7 +658,7 @@ module StatementTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``expression: async - await`` () =
@@ -668,7 +668,7 @@ module StatementTests =
         let m =
             method "int" "Host" ``<<`` [] ``>>`` ``(`` [] ``)`` [ protected; ``internal``; async ] ``{`` [ s ] ``}``
 
-        let actual = to_class_members_code [ m ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -684,15 +684,15 @@ module StatementTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``expression: member access generic`` () =
         let gen1 = generic "Task" ``<<`` [ "int" ] ``>>``
         let gen2 = generic "Run" ``<<`` [ "string" ] ``>>``
         let ma = (ident "System") <|.|> gen1 <.> (gen2, [ ident "a" ])
-        let m = host_in_method "int" [ statement ma ]
-        let actual = to_class_members_code [ m ]
+        let m = hostInMethod "int" [ statement ma ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -708,7 +708,7 @@ module StatementTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``expression: literals`` () =
@@ -731,8 +731,8 @@ module StatementTests =
             ]
             |> Seq.map statement
 
-        let m = host_in_method "void" ss
-        let actual = to_class_members_code [ m ]
+        let m = hostInMethod "void" ss
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -761,14 +761,14 @@ module StatementTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``expression: single param lambda`` () =
         let expr = ``as`` "float" (ident "b")
         let s = ``_ =>`` "b" expr
-        let m = return_from_arrow_method "Func<int, float>" s
-        let actual = to_class_members_code [ m ]
+        let m = returnFromArrowMethod "Func<int, float>" s
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -781,15 +781,15 @@ module StatementTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
 
     [<Fact>]
     let ``expression: multi param lambda`` () =
         let expr = ``as`` "float" (ident "b")
         let s = ``() =>`` [ "a"; "b" ] expr
-        let m = return_from_arrow_method "Func<int, float>" s
-        let actual = to_class_members_code [ m ]
+        let m = returnFromArrowMethod "Func<int, float>" s
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -802,7 +802,7 @@ module StatementTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``expression: numerics`` () =
@@ -816,8 +816,8 @@ module StatementTests =
             ]
             |> Seq.map statement
 
-        let m = host_in_method "void" ss
-        let actual = to_class_members_code [ m ]
+        let m = hostInMethod "void" ss
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -837,15 +837,15 @@ module StatementTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``expression: if then`` () =
         let condition = (ident "b") .==. (literal 12)
         let thens = [ (ident "a") <-- ((literal 1) <+> (literal 2)) ] |> List.map statement
         let stmt = ``if`` ``(`` condition ``)`` thens None
-        let m = host_in_method "void" [ stmt ]
-        let actual = to_class_members_code [ m ]
+        let m = hostInMethod "void" [ stmt ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -864,7 +864,7 @@ module StatementTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``expression: if then else`` () =
@@ -879,8 +879,8 @@ module StatementTests =
             |> List.map statement
 
         let stmt = ``if`` ``(`` condition ``)`` thens (Some(``else`` elses))
-        let m = host_in_method "void" [ stmt ]
-        let actual = to_class_members_code [ m ]
+        let m = hostInMethod "void" [ stmt ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -904,7 +904,7 @@ module StatementTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
 
     [<Fact>]
@@ -925,8 +925,8 @@ module StatementTests =
             |> List.map statement
 
         let stmt = ``if`` ``(`` condition ``)`` thens (``elif`` elifs (Some(``else`` elses)))
-        let m = host_in_method "void" [ stmt ]
-        let actual = to_class_members_code [ m ]
+        let m = hostInMethod "void" [ stmt ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -958,7 +958,7 @@ module StatementTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``expression: if then else using elif`` () =
@@ -980,8 +980,8 @@ module StatementTests =
         // ``if`` ``(`` condition ``)`` thens (``elif`` elifs (Some (``else`` elses)))
         let stmt1 = ``if`` ``(`` c1 ``)`` t1 (``elif`` [] None)
         let stmt2 = ``if`` ``(`` c2 ``)`` t2 (``elif`` [] (Some(``else`` elses)))
-        let m = host_in_method "void" [ stmt1; stmt2 ]
-        let actual = to_class_members_code [ m ]
+        let m = hostInMethod "void" [ stmt1; stmt2 ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -1010,7 +1010,7 @@ module StatementTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
 
     [<Fact>]
@@ -1019,8 +1019,8 @@ module StatementTests =
         let f = (literal "f")
         let cond = ``true``
         let s = ``return`` (Some(``?`` cond (t, f)))
-        let m = host_in_method "string" [ s ]
-        let actual = to_class_members_code [ m ]
+        let m = hostInMethod "string" [ s ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -1036,7 +1036,7 @@ module StatementTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``expression: foreach`` () =
@@ -1051,8 +1051,8 @@ module StatementTests =
             ]
 
         let stmt = foreach ``(`` "i" ``in`` expr ``)`` body
-        let m = host_in_method "void" [ stmt ]
-        let actual = to_class_members_code [ m ]
+        let m = hostInMethod "void" [ stmt ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -1074,7 +1074,7 @@ module StatementTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``expression: while`` () =
@@ -1088,8 +1088,8 @@ module StatementTests =
             ]
 
         let stmt = ``while`` ``(`` condition ``)`` body
-        let m = host_in_method "void" [ stmt ]
-        let actual = to_class_members_code [ m ]
+        let m = hostInMethod "void" [ stmt ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -1110,4 +1110,4 @@ module StatementTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual

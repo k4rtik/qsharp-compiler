@@ -9,7 +9,7 @@ module ConstructorTests =
     let ``constructor: empty`` () =
         let m = constructor "C" ``(`` [] ``)`` ``:`` [] [ ``public`` ] ``{`` [] ``}``
 
-        let actual = to_class_members_code [ m ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -24,14 +24,14 @@ module ConstructorTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``constructor: with parameter`` () =
         let m =
             constructor "C" ``(`` [ ("thing", (``type`` "object")) ] ``)`` ``:`` [] [ ``public`` ] ``{`` [] ``}``
 
-        let actual = to_class_members_code [ m ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -46,7 +46,7 @@ module ConstructorTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``constructor: with parameter 2`` () =
@@ -63,7 +63,7 @@ module ConstructorTests =
                 []
                 ``}``
 
-        let actual = to_class_members_code [ m ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -78,7 +78,7 @@ module ConstructorTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``constructor: calling base constructor`` () =
@@ -95,7 +95,7 @@ module ConstructorTests =
                 []
                 ``}``
 
-        let actual = to_class_members_code [ m ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -110,7 +110,7 @@ module ConstructorTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``constructor: calling base constructor 2`` () =
@@ -127,7 +127,7 @@ module ConstructorTests =
                 []
                 ``}``
 
-        let actual = to_class_members_code [ m ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -142,13 +142,13 @@ module ConstructorTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``constructor: private`` () =
         let m = constructor "C" ``(`` [] ``)`` ``:`` [] [ ``private`` ] ``{`` [] ``}``
 
-        let actual = to_class_members_code [ m ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -163,4 +163,4 @@ module ConstructorTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual

@@ -9,8 +9,8 @@ module MiscellaneousTests =
     let ``type name with 1 part`` () =
         let t = ``type`` "string"
         let s = ``new`` t ``(`` [] ``)``
-        let m = return_from_arrow_method (``type name`` t) s
-        let actual = to_class_members_code [ m ]
+        let m = returnFromArrowMethod (``type name`` t) s
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -23,14 +23,14 @@ module MiscellaneousTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``type name with 2 parts`` () =
         let t = ``type`` [ "System"; "String" ]
         let s = ``new`` t ``(`` [] ``)``
-        let m = return_from_arrow_method (``type name`` t) s
-        let actual = to_class_members_code [ m ]
+        let m = returnFromArrowMethod (``type name`` t) s
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -43,7 +43,7 @@ module MiscellaneousTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``type name with 0 parts`` () =
@@ -61,8 +61,8 @@ module MiscellaneousTests =
                        "List<T>" ]
 
         let s = ``new`` t ``(`` [] ``)``
-        let m = return_from_arrow_method (``type name`` t) s
-        let actual = to_class_members_code [ m ]
+        let m = returnFromArrowMethod (``type name`` t) s
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -75,4 +75,4 @@ module MiscellaneousTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual

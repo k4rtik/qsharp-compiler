@@ -10,7 +10,7 @@ module CompilationUnitTests =
         let input = ``compilation unit`` [] [] []
         let actual = generateCodeToString input
         let expected = @""
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``compilation-unit : single namespace`` () =
@@ -24,7 +24,7 @@ module CompilationUnitTests =
     using System;
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``compilation-unit : single namespace with using`` () =
@@ -42,7 +42,7 @@ namespace Foo
 {
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``compilation-unit : two namespaces`` () =
@@ -67,7 +67,7 @@ namespace Bar
     using System.Web;
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``compilation-unit : attributes`` () =
@@ -101,7 +101,7 @@ namespace Foo
     }
 }"""
 
-        are_equal expected actual
+        areEqual expected actual
 
 
     [<Fact>]
@@ -116,4 +116,4 @@ namespace Foo
 {
 }"
 
-        are_equal expected actual
+        areEqual expected actual

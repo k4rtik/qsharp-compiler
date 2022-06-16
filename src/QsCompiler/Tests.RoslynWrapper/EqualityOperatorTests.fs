@@ -9,7 +9,7 @@ module EqualityOperatorTests =
     let ``equality operator: ==`` () =
         let m = ``operator ==`` ("left", "right", ``type`` "string") (``=>`` ``true``)
 
-        let actual = to_class_members_code [ m ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -22,13 +22,13 @@ module EqualityOperatorTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``equality operator: !=`` () =
         let m = ``operator !=`` ("left", "right", ``type`` "string") (``=>`` ``true``)
 
-        let actual = to_class_members_code [ m ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -41,4 +41,4 @@ module EqualityOperatorTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual

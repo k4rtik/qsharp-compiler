@@ -8,7 +8,7 @@ module ClassTests =
     [<Fact>]
     let ``class: empty`` () =
         let c = ``class`` "C" ``<<`` [] ``>>`` ``:`` None ``,`` [] [ ``public`` ] ``{`` [] ``}``
-        let actual = to_namespace_member_code c
+        let actual = toNamespaceMemberCode c
 
         let expected =
             @"namespace N
@@ -20,14 +20,14 @@ module ClassTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``class: base class`` () =
         let c =
             ``class`` "C" ``<<`` [] ``>>`` ``:`` (Some("B" |> simpleBase)) ``,`` [] [ ``public`` ] ``{`` [] ``}``
 
-        let actual = to_namespace_member_code c
+        let actual = toNamespaceMemberCode c
 
         let expected =
             @"namespace N
@@ -39,13 +39,13 @@ module ClassTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
 
     [<Fact>]
     let ``class: generic`` () =
         let c = ``class`` "C" ``<<`` [ "T" ] ``>>`` ``:`` None ``,`` [] [ ``public`` ] ``{`` [] ``}``
-        let actual = to_namespace_member_code c
+        let actual = toNamespaceMemberCode c
 
         let expected =
             @"namespace N
@@ -57,12 +57,12 @@ module ClassTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``class: generic 2`` () =
         let c = ``class`` "C" ``<<`` [ "R"; "S" ] ``>>`` ``:`` None ``,`` [] [ ``public`` ] ``{`` [] ``}``
-        let actual = to_namespace_member_code c
+        let actual = toNamespaceMemberCode c
 
         let expected =
             @"namespace N
@@ -74,7 +74,7 @@ module ClassTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``class: interfaces`` () =
@@ -93,7 +93,7 @@ module ClassTests =
                 []
                 ``}``
 
-        let actual = to_namespace_member_code c
+        let actual = toNamespaceMemberCode c
 
         let expected =
             @"namespace N
@@ -105,7 +105,7 @@ module ClassTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``class: base and interfaces`` () =
@@ -124,7 +124,7 @@ module ClassTests =
                 []
                 ``}``
 
-        let actual = to_namespace_member_code c
+        let actual = toNamespaceMemberCode c
 
         let expected =
             @"namespace N
@@ -136,12 +136,12 @@ module ClassTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``class: private`` () =
         let c = ``class`` "C" ``<<`` [] ``>>`` ``:`` None ``,`` [] [ ``private`` ] ``{`` [] ``}``
-        let actual = to_namespace_member_code c
+        let actual = toNamespaceMemberCode c
 
         let expected =
             @"namespace N
@@ -153,12 +153,12 @@ module ClassTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``class: static`` () =
         let c = ``class`` "C" ``<<`` [] ``>>`` ``:`` None ``,`` [] [ ``static`` ] ``{`` [] ``}``
-        let actual = to_namespace_member_code c
+        let actual = toNamespaceMemberCode c
 
         let expected =
             @"namespace N
@@ -170,12 +170,12 @@ module ClassTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``class: internal`` () =
         let c = ``class`` "C" ``<<`` [] ``>>`` ``:`` None ``,`` [] [ ``internal`` ] ``{`` [] ``}``
-        let actual = to_namespace_member_code c
+        let actual = toNamespaceMemberCode c
 
         let expected =
             @"namespace N
@@ -187,12 +187,12 @@ module ClassTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``class: partial`` () =
         let c = ``class`` "C" ``<<`` [] ``>>`` ``:`` None ``,`` [] [ partial ] ``{`` [] ``}``
-        let actual = to_namespace_member_code c
+        let actual = toNamespaceMemberCode c
 
         let expected =
             @"namespace N
@@ -204,14 +204,14 @@ module ClassTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``class: private static partial`` () =
         let c =
             ``class`` "C" ``<<`` [] ``>>`` ``:`` None ``,`` [] [ ``private``; ``static``; partial ] ``{`` [] ``}``
 
-        let actual = to_namespace_member_code c
+        let actual = toNamespaceMemberCode c
 
         let expected =
             @"namespace N
@@ -223,4 +223,4 @@ module ClassTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual

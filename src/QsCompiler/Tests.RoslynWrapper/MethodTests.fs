@@ -11,7 +11,7 @@ module MethodTests =
     let ``arrow method: class abstract definition`` () =
         let m = arrow_method "void" "M" ``<<`` [] ``>>`` ``(`` [] ``)`` [ ``public``; ``abstract`` ] None
 
-        let actual = to_class_members_code [ m ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -24,13 +24,13 @@ module MethodTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``arrow method: interface method declaration`` () =
         let m = arrow_method "void" "M" ``<<`` [] ``>>`` ``(`` [] ``)`` [] None
 
-        let actual = to_interface_members_code [ m ]
+        let actual = toInterfaceMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -43,13 +43,13 @@ module MethodTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``arrow method: generic`` () =
         let m = arrow_method "void" "M" ``<<`` [ "T" ] ``>>`` ``(`` [] ``)`` [ ``public``; ``abstract`` ] None
 
-        let actual = to_class_members_code [ m ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -62,7 +62,7 @@ module MethodTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``arrow method: with parameter`` () =
@@ -79,7 +79,7 @@ module MethodTests =
                 [ ``public``; ``abstract`` ]
                 None
 
-        let actual = to_class_members_code [ m ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -92,7 +92,7 @@ module MethodTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``arrow method: with expression`` () =
@@ -111,7 +111,7 @@ module MethodTests =
                 [ ``public``; virtual ]
                 (Some e)
 
-        let actual = to_class_members_code [ m ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -124,7 +124,7 @@ module MethodTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``arrow method: with array parameter`` () =
@@ -141,7 +141,7 @@ module MethodTests =
                 [ ``public``; ``abstract`` ]
                 None
 
-        let actual = to_class_members_code [ m ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -154,7 +154,7 @@ module MethodTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``arrow method: with two parameters`` () =
@@ -165,7 +165,7 @@ module MethodTests =
             ``//`` " Method comment"
             <| arrow_method "void" "M" ``<<`` [ "T" ] ``>>`` ``(`` [ p1; p2 ] ``)`` [ ``public``; ``abstract`` ] None
 
-        let actual = to_class_members_code [ m ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -179,7 +179,7 @@ module MethodTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``method: with body`` () =
@@ -201,7 +201,7 @@ module MethodTests =
                 ]
                 ``}``
 
-        let actual = to_class_members_code [ m ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -221,4 +221,4 @@ module MethodTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual

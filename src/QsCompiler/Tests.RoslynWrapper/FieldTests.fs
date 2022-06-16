@@ -9,7 +9,7 @@ module FieldTests =
     let ``field: uninitialized`` () =
         let m = field "string" "m_Name" [ ``private`` ] None
 
-        let actual = to_class_members_code [ m ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -22,14 +22,14 @@ module FieldTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual
 
     [<Fact>]
     let ``field: initialized`` () =
         let e = ``:=`` <| literal "John"
         let m = field "string" "m_Name" [ ``private`` ] (Some e)
 
-        let actual = to_class_members_code [ m ]
+        let actual = toClassMembersCode [ m ]
 
         let expected =
             @"namespace N
@@ -42,4 +42,4 @@ module FieldTests =
     }
 }"
 
-        are_equal expected actual
+        areEqual expected actual

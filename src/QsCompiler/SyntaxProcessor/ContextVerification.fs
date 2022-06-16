@@ -298,7 +298,7 @@ let VerifySyntaxTokenContext =
             | DeclarationAttribute _ -> verifyDeclarationAttribute context
             | NamespaceDeclaration _ -> verifyNamespace context
             | InvalidFragment _ -> false, [||]
-        |> fun (kind, tuple) -> kind, tuple |> Array.map (fun (x, y) -> QsCompilerDiagnostic.New(x, []) y))
+        |> fun (kind, tuple) -> kind, tuple |> Array.map (fun (x, y) -> QsCompilerDiagnostic.New (x, []) y))
 
 let private mergeMaps onDuplicateKey =
     fun map key value ->

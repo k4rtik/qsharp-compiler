@@ -400,7 +400,7 @@ module SymbolResolution =
 
                 [
                     if argType.Exists isNamedParam |> not && returnType.Exists isNamedParam |> not then
-                        QsCompilerDiagnostic.Warning(WarningCode.UnusedTypeParam, [ "'" + name ]) range
+                        QsCompilerDiagnostic.Warning (WarningCode.UnusedTypeParam, [ "'" + name ]) range
                 ]
             | InvalidName -> []
 

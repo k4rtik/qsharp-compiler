@@ -360,7 +360,7 @@ type InferenceContext(symbolTracker: SymbolTracker) =
     member private context.ApplyClassConstraint cls =
         let error code args range =
             let range = TypeRange.tryRange range |> QsNullable.defaultValue Range.Zero
-            QsCompilerDiagnostic.Error(code, args) range |> CompilerDiagnostic
+            QsCompilerDiagnostic.Error (code, args) range |> CompilerDiagnostic
 
         let isInvalidType ty =
             context.Resolve(ty).Resolution = InvalidType

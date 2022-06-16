@@ -40,7 +40,7 @@ let private buildUnknown text =
         {
             Kind = InvalidFragment
             Range = range
-            Diagnostics = ImmutableArray.Create(QsCompilerDiagnostic.Error(InvalidFragment.ErrorCode, []) range)
+            Diagnostics = ImmutableArray.Create(QsCompilerDiagnostic.Error (InvalidFragment.ErrorCode, []) range)
             Text = text
         }
 

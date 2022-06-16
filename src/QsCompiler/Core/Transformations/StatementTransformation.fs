@@ -83,7 +83,7 @@ type StatementKindTransformationBase(statementTransformation: _ -> StatementTran
         let positionedBlock (expr, body, location, comments) =
             expr, QsPositionedBlock.New comments location body
 
-        positionedBlock |> node.BuildOr(intro, block) (expr, body, location, comments)
+        positionedBlock |> node.BuildOr (intro, block) (expr, body, location, comments)
 
     // statements containing subconstructs or expressions
 

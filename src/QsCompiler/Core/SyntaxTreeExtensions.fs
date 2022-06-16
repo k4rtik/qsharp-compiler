@@ -148,7 +148,7 @@ type ResolvedType with
     /// Returns an enumerable of all extracted return values.
     member this.ExtractAll(extract: _ -> IEnumerable<_>) : IEnumerable<_> =
         let inner (t: ResolvedType) = t.Resolution
-        ResolvedType.ExtractAll(inner, extract) this
+        ResolvedType.ExtractAll (inner, extract) this
 
 
 type QsType with
@@ -171,7 +171,7 @@ type QsType with
     /// Returns an enumerable of all extracted types.
     member public this.ExtractAll(extract: _ -> IEnumerable<_>) =
         let inner (t: QsType) = t.Type
-        ResolvedType.ExtractAll(inner, extract) this
+        ResolvedType.ExtractAll (inner, extract) this
 
 
 type TypedExpression with

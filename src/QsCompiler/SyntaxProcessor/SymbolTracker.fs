@@ -118,7 +118,7 @@ type SymbolTracker(globals: NamespaceManager, sourceFile, parent: QsQualifiedNam
     let globalTypeWithName (ns, name) =
         match ns with
         | None -> globalSymbols().TryResolveAndGetType name (parent.Namespace, sourceFile)
-        | Some nsName -> globalSymbols().TryGetType(QsQualifiedName.New(nsName, name)) (parent.Namespace, sourceFile)
+        | Some nsName -> globalSymbols().TryGetType (QsQualifiedName.New(nsName, name)) (parent.Namespace, sourceFile)
 
     /// If a callable declaration (including type constructors!) for a callable with the given name exists in GlobalSymbols,
     /// returns a its header information as Value. Returns Null otherwise.
@@ -128,7 +128,7 @@ type SymbolTracker(globals: NamespaceManager, sourceFile, parent: QsQualifiedNam
         match ns with
         | None -> globalSymbols().TryResolveAndGetCallable name (parent.Namespace, sourceFile)
         | Some nsName ->
-            globalSymbols().TryGetCallable(QsQualifiedName.New(nsName, name)) (parent.Namespace, sourceFile)
+            globalSymbols().TryGetCallable (QsQualifiedName.New(nsName, name)) (parent.Namespace, sourceFile)
 
     /// the namespace and callable declaration within which the symbols tracked by this SymbolTracker instance are used
     member this.Parent = parent
@@ -341,7 +341,7 @@ type SymbolTracker(globals: NamespaceManager, sourceFile, parent: QsQualifiedNam
     /// For each diagnostic generated during the resolution, calls the given addDiagnostics function on it.
     /// Returns the resolved type, *including* its range information if applicable.
     member internal this.ResolveType addDiagnostic (qsType: QsType) =
-        let resolved, errs = globalSymbols().ResolveType(parent, typeParameters, sourceFile) qsType
+        let resolved, errs = globalSymbols().ResolveType (parent, typeParameters, sourceFile) qsType
 
         for err in errs do
             addDiagnostic err

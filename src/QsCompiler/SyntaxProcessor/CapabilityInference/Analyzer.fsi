@@ -21,10 +21,12 @@ module Target =
     val create: name: string -> capability: TargetCapability -> Target
 
 type internal 'Props Pattern =
-    { Capability: TargetCapability
-      Diagnose: Target -> QsCompilerDiagnostic option
-      // TODO: Remove the additional properties as part of https://github.com/microsoft/qsharp-compiler/issues/1448.
-      Properties: 'Props }
+    {
+        Capability: TargetCapability
+        Diagnose: Target -> QsCompilerDiagnostic option
+        // TODO: Remove the additional properties as part of https://github.com/microsoft/qsharp-compiler/issues/1448.
+        Properties: 'Props
+    }
 
 module internal Pattern =
     val discard: 'Props Pattern -> unit Pattern

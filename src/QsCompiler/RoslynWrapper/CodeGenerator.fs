@@ -13,7 +13,7 @@ module CodeGenerator =
 
     let generateCodeToString (cu: CompilationUnitSyntax) =
         let fn = Formatting.Formatter.Format(cu, new AdhocWorkspace())
-        let sb = new System.Text.StringBuilder()
+        let sb = System.Text.StringBuilder()
         use sw = new System.IO.StringWriter(sb)
         fn.WriteTo(sw)
         sb.ToString()

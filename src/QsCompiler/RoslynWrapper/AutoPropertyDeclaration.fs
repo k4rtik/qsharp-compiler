@@ -25,10 +25,10 @@ module PropertyDeclaration =
         |> (fun ad -> SyntaxKind.SemicolonToken |> SyntaxFactory.Token |> ad.WithSemicolonToken)
 
     let private setGetAccessor bodyBlockStatements (pd: PropertyDeclarationSyntax) =
-        SyntaxKind.GetAccessorDeclaration
-        |> SyntaxFactory.AccessorDeclaration
-        |> setBodyBlock bodyBlockStatements
-        |> (fun ad -> pd.AddAccessorListAccessors ad)
+        pd.AddAccessorListAccessors(
+            SyntaxFactory.AccessorDeclaration SyntaxKind.GetAccessorDeclaration
+            |> setBodyBlock bodyBlockStatements
+        )
 
     let private setArrowGetAccessor body (pd: PropertyDeclarationSyntax) =
         body
@@ -36,16 +36,15 @@ module PropertyDeclaration =
         |> (fun pd -> SyntaxKind.SemicolonToken |> SyntaxFactory.Token |> pd.WithSemicolonToken)
 
     let private setSetAccessor bodyBlockStatements (pd: PropertyDeclarationSyntax) =
-        SyntaxKind.SetAccessorDeclaration
-        |> SyntaxFactory.AccessorDeclaration
-        |> setBodyBlock bodyBlockStatements
-        |> (fun ad -> pd.AddAccessorListAccessors ad)
+        pd.AddAccessorListAccessors(
+            SyntaxFactory.AccessorDeclaration SyntaxKind.SetAccessorDeclaration
+            |> setBodyBlock bodyBlockStatements
+        )
 
     let private setArrowSetAccessor body (pd: PropertyDeclarationSyntax) =
-        SyntaxKind.SetAccessorDeclaration
-        |> SyntaxFactory.AccessorDeclaration
-        |> setArrowBody body
-        |> (fun ad -> pd.AddAccessorListAccessors ad)
+        pd.AddAccessorListAccessors(
+            SyntaxFactory.AccessorDeclaration SyntaxKind.SetAccessorDeclaration |> setArrowBody body
+        )
 
 
 

@@ -44,8 +44,7 @@ module Expressions =
     let ``() =>`` parameters node =
         let parameterArr =
             parameters
-            |> Seq.map SyntaxFactory.Identifier
-            |> Seq.map SyntaxFactory.Parameter
+            |> Seq.map (SyntaxFactory.Identifier >> SyntaxFactory.Parameter)
             |> SyntaxFactory.SeparatedList
             |> SyntaxFactory.ParameterList
 
@@ -78,14 +77,14 @@ module Expressions =
 
     // left?.right
     let (<|?.|>) left right =
-        let member_binding_expr = SyntaxFactory.MemberBindingExpression right
-        SyntaxFactory.ConditionalAccessExpression(left, member_binding_expr) :> ExpressionSyntax
+        let memberBindingExpr = SyntaxFactory.MemberBindingExpression right
+        SyntaxFactory.ConditionalAccessExpression(left, memberBindingExpr) :> ExpressionSyntax
 
     // left?.right(args)
     let (<?.>) left (right, args) =
-        let member_binding_expr = SyntaxFactory.MemberBindingExpression right :> ExpressionSyntax
+        let memberBindingExpr = SyntaxFactory.MemberBindingExpression right :> ExpressionSyntax
 
-        let target = invoke member_binding_expr ``(`` args ``)``
+        let target = invoke memberBindingExpr ``(`` args ``)``
         SyntaxFactory.ConditionalAccessExpression(left, target) :> ExpressionSyntax
 
     // -(expr)
@@ -230,8 +229,7 @@ module Expressions =
     // (val0, val1, ...)
     let ``tuple`` vals =
         vals
-        |> List.map (fun x -> x :> ExpressionSyntax)
-        |> List.map (SyntaxFactory.Argument)
+        |> List.map (fun x -> x :> ExpressionSyntax |> SyntaxFactory.Argument)
         |> SyntaxFactory.SeparatedList
         |> SyntaxFactory.TupleExpression
         :> ExpressionSyntax

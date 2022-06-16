@@ -110,14 +110,14 @@ namespace N1
                 | _ -> ()
 
         let addSourceFile (mgr: CompilationUnitManager) fileName =
-            let fileId = new Uri(Path.GetFullPath fileName)
+            let fileId = Uri(Path.GetFullPath fileName)
             let file = CompilationUnitManager.InitializeFileManager(fileId, File.ReadAllText fileName)
             mgr.AddOrUpdateSourceFileAsync file |> ignore
         // TODO: catch compilation errors and fail
         let mgr =
             new CompilationUnitManager(
                 ProjectProperties.Empty,
-                (fun ex -> raise ex),
+                raise,
                 (fun msg _ -> printf "%s" msg),
                 (fun (ps: PublishDiagnosticParams) -> ps.Diagnostics |> Array.iter addError)
             )
@@ -148,7 +148,7 @@ namespace N1
 
     let findCallable name =
         match globalContext.ByName.TryGetValue name with
-        | true, v -> v |> List.sort |> List.head
+        | true, v -> List.min v
         | false, _ -> sprintf "no callable with name %s has been successfully compiled" name |> failwith
 
     let findUdt name =
@@ -233,19 +233,19 @@ namespace N1
     let emptyInternalOperation = findCallable @"EmptyInternalOperation"
     let useInternalCallables = findCallable @"UseInternalCallables"
 
-    let udt_args0 = findUdt @"udt_args0"
-    let udt_args1 = findUdt @"udt_args1"
-    let udt_A = findUdt @"A"
-    let udt_AA = findUdt @"AA"
-    let udt_U = findUdt @"U"
-    let udt_Q = findUdt @"Q"
-    let udt_QQ = findUdt @"QQ"
-    let udt_Qubits = findUdt @"Qubits"
-    let udt_Real = findUdt @"udt_Real"
-    let udt_Complex = findUdt @"udt_Complex"
-    let udt_TwoDimArray = findUdt @"udt_TwoDimArray"
-    let udt_InternalType = findUdt @"InternalType"
-    let udt_NamedTuple = findUdt @"NamedTuple"
+    let udtArgs0 = findUdt @"udt_args0"
+    let udtArgs1 = findUdt @"udt_args1"
+    let udtA = findUdt @"A"
+    let udtAA = findUdt @"AA"
+    let udtU = findUdt @"U"
+    let udtQ = findUdt @"Q"
+    let udtQQ = findUdt @"QQ"
+    let udtQubits = findUdt @"Qubits"
+    let udtReal = findUdt @"udt_Real"
+    let udtComplex = findUdt @"udt_Complex"
+    let udtTwoDimArray = findUdt @"udt_TwoDimArray"
+    let udtInternalType = findUdt @"InternalType"
+    let udtNamedTuple = findUdt @"NamedTuple"
 
     let createTestContext op = globalContext.SetCallable op
 
@@ -341,31 +341,31 @@ namespace N1
             let actual = tupleBaseClassName context udt.Type
             Assert.Equal(expected |> clearFormatting, actual |> clearFormatting)
 
-        "QTuple<IQArray<Qubit>>" |> testOne udt_args0
+        "QTuple<IQArray<Qubit>>" |> testOne udtArgs0
 
-        "QTuple<(Int64, IQArray<Qubit>)>" |> testOne udt_args1
+        "QTuple<(Int64, IQArray<Qubit>)>" |> testOne udtArgs1
 
-        "QTuple<ICallable>" |> testOne udt_A
+        "QTuple<ICallable>" |> testOne udtA
 
-        "QTuple<A>" |> testOne udt_AA
+        "QTuple<A>" |> testOne udtAA
 
-        "QTuple<IUnitary>" |> testOne udt_U
+        "QTuple<IUnitary>" |> testOne udtU
 
-        "QTuple<Qubit>" |> testOne udt_Q
+        "QTuple<Qubit>" |> testOne udtQ
 
-        "QTuple<Double>" |> testOne udt_Real
+        "QTuple<Double>" |> testOne udtReal
 
-        "QTuple<(udt_Real,udt_Real)>" |> testOne udt_Complex
+        "QTuple<(udt_Real,udt_Real)>" |> testOne udtComplex
 
-        "QTuple<IQArray<IQArray<Result>>>" |> testOne udt_TwoDimArray
+        "QTuple<IQArray<IQArray<Result>>>" |> testOne udtTwoDimArray
 
     [<Fact>]
     let ``operationDependencies test`` () =
-        let NS1 = "Microsoft.Quantum.Testing"
-        let NS2 = "Microsoft.Quantum.Intrinsic"
-        let NSG = "Microsoft.Quantum.Compiler.Generics"
-        let NSO = "Microsoft.Quantum.Overrides"
-        let NSC = "Microsoft.Quantum.Core"
+        let ns1 = "Microsoft.Quantum.Testing"
+        let ns2 = "Microsoft.Quantum.Intrinsic"
+        let nsG = "Microsoft.Quantum.Compiler.Generics"
+        let nsO = "Microsoft.Quantum.Overrides"
+        let nsC = "Microsoft.Quantum.Core"
 
         let testOne (_, op) expected =
             let context = createTestContext op
@@ -385,39 +385,39 @@ namespace N1
         [] |> testOne oneQubitAbstractOperation
 
         [
-            ((NS2, "CNOT"), "IAdjointable<(Qubit,Qubit)>")
-            ((NS2, "R"), "IAdjointable<(Double,Qubit)>")
+            ((ns2, "CNOT"), "IAdjointable<(Qubit,Qubit)>")
+            ((ns2, "R"), "IAdjointable<(Double,Qubit)>")
         ]
         |> testOne twoQubitOperation
 
-        [ ((NS1, "three_op1"), "IUnitary<(Qubit,Qubit)>") ] |> testOne threeQubitOperation
+        [ ((ns1, "three_op1"), "IUnitary<(Qubit,Qubit)>") ] |> testOne threeQubitOperation
 
         [] |> testOne randomAbstractOperation
 
         [
-            ((NS2, "Z"), "IUnitary<Qubit>")
-            ((NS1, "selfInvokingOperation"), "IAdjointable<Qubit>")
+            ((ns2, "Z"), "IUnitary<Qubit>")
+            ((ns1, "selfInvokingOperation"), "IAdjointable<Qubit>")
         ]
         |> testOne selfInvokingOperation
 
-        [ ((NSG, "genRecursion"), "ICallable") ] |> testOne genRecursion
+        [ ((nsG, "genRecursion"), "ICallable") ] |> testOne genRecursion
 
         [
-            ((NS2, "M"), "ICallable<Qubit, Result>")
-            ((NS1, "let_f0"), "ICallable<Int64, QRange>")
+            ((ns2, "M"), "ICallable<Qubit, Result>")
+            ((ns1, "let_f0"), "ICallable<Int64, QRange>")
         ]
         |> testOne letsOperations
 
         [] |> testOne helloWorld
 
         [
-            ((NS2, "Allocate"), "Allocate")
-            ((NS2, "Borrow"), "Borrow")
-            ((NS2, "X"), "IUnitary<Qubit>")
-            ((NS2, "Z"), "IUnitary<Qubit>")
-            ((NS2, "Release"), "Release")
-            ((NS2, "Return"), "Return")
-            ((NS1, "alloc_op0"), "ICallable<Qubit, QVoid>")
+            ((ns2, "Allocate"), "Allocate")
+            ((ns2, "Borrow"), "Borrow")
+            ((ns2, "X"), "IUnitary<Qubit>")
+            ((ns2, "Z"), "IUnitary<Qubit>")
+            ((ns2, "Release"), "Release")
+            ((ns2, "Return"), "Return")
+            ((ns1, "alloc_op0"), "ICallable<Qubit, QVoid>")
         ]
         |> testOne allocOperation
 
@@ -425,105 +425,105 @@ namespace N1
 
         [] |> testOne compareOps
 
-        [ ((NS1, "if_f0"), "ICallable<QVoid, Int64>") ] |> testOne ifOperation
+        [ ((ns1, "if_f0"), "ICallable<QVoid, Int64>") ] |> testOne ifOperation
 
         [
-            ((NSC, "RangeEnd"), "ICallable<QRange, Int64>")
-            ((NS1, "foreach_f2"), "ICallable<(Int64,Int64), Int64>")
+            ((nsC, "RangeEnd"), "ICallable<QRange, Int64>")
+            ((ns1, "foreach_f2"), "ICallable<(Int64,Int64), Int64>")
         ]
         |> testOne foreachOperation
 
         [
-            ((NS2, "Allocate"), "Allocate")
-            ((NS2, "Release"), "Release")
-            ((NS1, "repeat_op0"), "ICallable<repeat_udt0, Result>")
-            ((NS1, "repeat_op1"), "ICallable<(Int64,IQArray<Qubit>), Result>")
-            ((NS1, "repeat_op2"), "ICallable<(Double,repeat_udt0), Result>")
-            ((NS1, "repeat_udt0"), "ICallable<(Int64,IQArray<Qubit>), repeat_udt0>")
+            ((ns2, "Allocate"), "Allocate")
+            ((ns2, "Release"), "Release")
+            ((ns1, "repeat_op0"), "ICallable<repeat_udt0, Result>")
+            ((ns1, "repeat_op1"), "ICallable<(Int64,IQArray<Qubit>), Result>")
+            ((ns1, "repeat_op2"), "ICallable<(Double,repeat_udt0), Result>")
+            ((ns1, "repeat_udt0"), "ICallable<(Int64,IQArray<Qubit>), repeat_udt0>")
         ]
         |> testOne repeatOperation
 
         [
-            ((NS1, "partial3Args"), "ICallable<(Int64,Double,Result), QVoid>")
-            ((NS1, "partialFunction"), "ICallable<(Int64,Double,Pauli), Result>")
-            ((NS1, "partialGeneric1"), "ICallable")
-            ((NS1, "partialGeneric2"), "ICallable")
-            ((NS1, "partialInnerTuple"), "ICallable<(Int64,(Double,Result)), QVoid>")
-            ((NS1, "partialNestedArgsOp"),
+            ((ns1, "partial3Args"), "ICallable<(Int64,Double,Result), QVoid>")
+            ((ns1, "partialFunction"), "ICallable<(Int64,Double,Pauli), Result>")
+            ((ns1, "partialGeneric1"), "ICallable")
+            ((ns1, "partialGeneric2"), "ICallable")
+            ((ns1, "partialInnerTuple"), "ICallable<(Int64,(Double,Result)), QVoid>")
+            ((ns1, "partialNestedArgsOp"),
              "ICallable<((Int64,Int64,Int64),((Double,Double),(Result,Result,Result))), QVoid>")
         ]
         |> testOne partialApplicationTest
 
-        [ ((NS1, "OP_1"), "ICallable<Qubit, Result>") ] |> testOne opParametersTest
+        [ ((ns1, "OP_1"), "ICallable<Qubit, Result>") ] |> testOne opParametersTest
 
         [
-            ((NS2, "Allocate"), "Allocate")
-            ((NS2, "Borrow"), "Borrow")
-            ((NSC, "Length"), "ICallable")
-            ((NS2, "Release"), "Release")
-            ((NS2, "Return"), "Return")
-            ((NS1, "random_f1"), "ICallable<(Int64,Int64), Int64>")
-            ((NS1, "random_op0"), "ICallable<(Qubit,Int64), QVoid>")
-            ((NS1, "random_op1"), "ICallable<Qubit, Result>")
-            ((NS1, "random_op10"), "ICallable<(Qubit,Int64), QVoid>")
-            ((NS1, "random_op2"), "ICallable<Qubit, Result>")
-            ((NS1, "random_op3"), "ICallable<(Qubit,Result,Pauli), QVoid>")
-            ((NS1, "random_op4"), "ICallable<(Qubit,Pauli), QVoid>")
-            ((NS1, "random_op5"), "IAdjointable<(Qubit,Pauli)>")
-            ((NS1, "random_op6"), "ICallable<(Qubit,Pauli), QVoid>")
-            ((NS1, "random_op7"), "IUnitary<(Qubit,Pauli)>")
-            ((NS1, "random_op8"), "ICallable<(Qubit,Pauli), QVoid>")
-            ((NS1, "random_op9"), "IUnitary<(Qubit,Pauli)>")
+            ((ns2, "Allocate"), "Allocate")
+            ((ns2, "Borrow"), "Borrow")
+            ((nsC, "Length"), "ICallable")
+            ((ns2, "Release"), "Release")
+            ((ns2, "Return"), "Return")
+            ((ns1, "random_f1"), "ICallable<(Int64,Int64), Int64>")
+            ((ns1, "random_op0"), "ICallable<(Qubit,Int64), QVoid>")
+            ((ns1, "random_op1"), "ICallable<Qubit, Result>")
+            ((ns1, "random_op10"), "ICallable<(Qubit,Int64), QVoid>")
+            ((ns1, "random_op2"), "ICallable<Qubit, Result>")
+            ((ns1, "random_op3"), "ICallable<(Qubit,Result,Pauli), QVoid>")
+            ((ns1, "random_op4"), "ICallable<(Qubit,Pauli), QVoid>")
+            ((ns1, "random_op5"), "IAdjointable<(Qubit,Pauli)>")
+            ((ns1, "random_op6"), "ICallable<(Qubit,Pauli), QVoid>")
+            ((ns1, "random_op7"), "IUnitary<(Qubit,Pauli)>")
+            ((ns1, "random_op8"), "ICallable<(Qubit,Pauli), QVoid>")
+            ((ns1, "random_op9"), "IUnitary<(Qubit,Pauli)>")
         ]
         |> testOne randomOperation
 
         [
-            ((NS2, "Allocate"), "Allocate")
-            ((NS2, "H"), "IUnitary<Qubit>")
-            ((NSC, "Length"), "ICallable")
-            ((NS2, "M"), "ICallable<Qubit, Result>")
-            ((NS2, "Release"), "Release")
-            ((NS2, "S"), "IUnitary<Qubit>")
-            ((NS1, "With1C"), "IControllable<(IAdjointable,IControllable,Qubit)>")
-            ((NS2, "X"), "IUnitary<Qubit>")
+            ((ns2, "Allocate"), "Allocate")
+            ((ns2, "H"), "IUnitary<Qubit>")
+            ((nsC, "Length"), "ICallable")
+            ((ns2, "M"), "ICallable<Qubit, Result>")
+            ((ns2, "Release"), "Release")
+            ((ns2, "S"), "IUnitary<Qubit>")
+            ((ns1, "With1C"), "IControllable<(IAdjointable,IControllable,Qubit)>")
+            ((ns2, "X"), "IUnitary<Qubit>")
         ]
         |> testOne measureWithScratch
 
         [] |> testOne genC1
 
-        [ ((NSG, "genC2"), "ICallable") ] |> testOne genU1
+        [ ((nsG, "genC2"), "ICallable") ] |> testOne genU1
 
         [] |> testOne genCtrl3
 
         [
-            ((NS2, "Allocate"), "Allocate")
-            ((NS2, "CNOT"), "IAdjointable<(Qubit,Qubit)>")
-            ((NS1, "Hold"), "ICallable")
-            ((NS2, "Release"), "Release")
-            ((NSG, "ResultToString"), "ICallable<Result, String>")
-            ((NS2, "X"), "IUnitary<Qubit>")
-            ((NSG, "genIter"), "IUnitary")
-            ((NSG, "genMapper"), "ICallable")
-            ((NSG, "genU1"), "IUnitary")
-            ((NS1, "noOpGeneric"), "IUnitary")
-            ((NS1, "noOpResult"), "IUnitary<Result>")
+            ((ns2, "Allocate"), "Allocate")
+            ((ns2, "CNOT"), "IAdjointable<(Qubit,Qubit)>")
+            ((ns1, "Hold"), "ICallable")
+            ((ns2, "Release"), "Release")
+            ((nsG, "ResultToString"), "ICallable<Result, String>")
+            ((ns2, "X"), "IUnitary<Qubit>")
+            ((nsG, "genIter"), "IUnitary")
+            ((nsG, "genMapper"), "ICallable")
+            ((nsG, "genU1"), "IUnitary")
+            ((ns1, "noOpGeneric"), "IUnitary")
+            ((ns1, "noOpResult"), "IUnitary<Result>")
         ]
         |> testOne usesGenerics
 
-        [ ((NSG, "genericWithMultipleTypeParams"), "ICallable") ]
+        [ ((nsG, "genericWithMultipleTypeParams"), "ICallable") ]
         |> testOne callsGenericWithMultipleTypeParams
 
         [
-            ((NS2, "Allocate"), "Allocate")
-            ((NS2, "H"), "IUnitary<Qubit>")
-            ((NS1, "H"), "ICallable<Qubit, QVoid>")
-            ((NS2, "Release"), "Release")
-            ((NS1, "emptyFunction"), "ICallable<QVoid, QVoid>")
-            ((NSO, "emptyFunction"), "ICallable<QVoid, QVoid>")
+            ((ns2, "Allocate"), "Allocate")
+            ((ns2, "H"), "IUnitary<Qubit>")
+            ((ns1, "H"), "ICallable<Qubit, QVoid>")
+            ((ns2, "Release"), "Release")
+            ((ns1, "emptyFunction"), "ICallable<QVoid, QVoid>")
+            ((nsO, "emptyFunction"), "ICallable<QVoid, QVoid>")
         ]
         |> testOne duplicatedDefinitionsCaller
 
-        [ ((NS1, "iter"), "ICallable"); ((NSC, "Length"), "ICallable") ] |> testOne testLengthDependency
+        [ ((ns1, "iter"), "ICallable"); ((nsC, "Length"), "ICallable") ] |> testOne testLengthDependency
 
 
     [<Fact>]
@@ -879,10 +879,10 @@ namespace N1
     [<Fact>]
     let ``getTypeOfOp test`` () =
         let testOne (_, op) =
-            let dependendies context d =
-                operationDependencies d |> List.map (getTypeOfOp context) |> List.map formatSyntaxTree |> List.sort
+            let dependencies context =
+                operationDependencies >> List.map (getTypeOfOp context >> formatSyntaxTree) >> List.sort
 
-            testOneList op dependendies op id
+            testOneList op dependencies op id
 
         let template = sprintf "typeof(%s)"
 
@@ -1026,7 +1026,7 @@ namespace N1
 
     let createVisitor (_, op) (sp: QsSpecialization) =
         let context = createTestContext op
-        let builder = new SyntaxBuilder(context)
+        let builder = SyntaxBuilder(context)
         builder.Namespaces.OnSpecializationDeclaration sp |> ignore
         builder
 
@@ -2869,7 +2869,7 @@ internal partial class EmptyInternalOperation : Operation<QVoid, QVoid>, ICallab
         }
     }
 """
-        |> testOneUdt udt_U
+        |> testOneUdt udtU
 
         """
     public class AA : UDTBase<A>, IApplyData
@@ -2895,7 +2895,7 @@ internal partial class EmptyInternalOperation : Operation<QVoid, QVoid>, ICallab
         }
     }
 """
-        |> testOneUdt udt_AA
+        |> testOneUdt udtAA
 
         """
     public class Q : UDTBase<Qubit>, IApplyData
@@ -2921,7 +2921,7 @@ internal partial class EmptyInternalOperation : Operation<QVoid, QVoid>, ICallab
         }
     }
 """
-        |> testOneUdt udt_Q
+        |> testOneUdt udtQ
 
         """
     public class QQ : UDTBase<Q>, IApplyData
@@ -2947,7 +2947,7 @@ internal partial class EmptyInternalOperation : Operation<QVoid, QVoid>, ICallab
         }
     }
 """
-        |> testOneUdt udt_QQ
+        |> testOneUdt udtQQ
 
         """
     public class Qubits : UDTBase<IQArray<Qubit>>, IApplyData
@@ -2973,7 +2973,7 @@ internal partial class EmptyInternalOperation : Operation<QVoid, QVoid>, ICallab
         }
     }
 """
-        |> testOneUdt udt_Qubits
+        |> testOneUdt udtQubits
 
         """
     public class udt_args1 : UDTBase<(Int64,IQArray<Qubit>)>, IApplyData
@@ -3003,7 +3003,7 @@ internal partial class EmptyInternalOperation : Operation<QVoid, QVoid>, ICallab
         }
     }
 """
-        |> testOneUdt udt_args1
+        |> testOneUdt udtArgs1
 
         """
     public class udt_Real : UDTBase<Double>, IApplyData
@@ -3023,7 +3023,7 @@ internal partial class EmptyInternalOperation : Operation<QVoid, QVoid>, ICallab
         }
     }
 """
-        |> testOneUdt udt_Real
+        |> testOneUdt udtReal
 
         """
     public class udt_Complex : UDTBase<(udt_Real,udt_Real)>, IApplyData
@@ -3046,7 +3046,7 @@ internal partial class EmptyInternalOperation : Operation<QVoid, QVoid>, ICallab
         }
     }
 """
-        |> testOneUdt udt_Complex
+        |> testOneUdt udtComplex
 
         """
     public class udt_TwoDimArray : UDTBase<IQArray<IQArray<Result>>>, IApplyData
@@ -3066,7 +3066,7 @@ internal partial class EmptyInternalOperation : Operation<QVoid, QVoid>, ICallab
         }
     }
 """
-        |> testOneUdt udt_TwoDimArray
+        |> testOneUdt udtTwoDimArray
 
     [<Fact>]
     let ``buildUdtClass - access modifiers`` () =
@@ -3088,7 +3088,7 @@ internal class InternalType : UDTBase<QVoid>, IApplyData
     }
 }
 """
-        |> testOneUdt udt_InternalType
+        |> testOneUdt udtInternalType
 
     [<Fact>]
     let ``buildUdtClass - named tuple`` () =
@@ -3115,7 +3115,7 @@ public class NamedTuple : UDTBase<((Int64,Double),Int64)>, IApplyData
     }
 }
 """
-        |> testOneUdt udt_NamedTuple
+        |> testOneUdt udtNamedTuple
 
 
     [<Fact>]

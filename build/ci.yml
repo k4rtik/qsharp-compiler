@@ -59,9 +59,6 @@ jobs:
     displayName: Fantomas
 
   - script: |
-      dotnet restore QsFmt.sln
-      dotnet tool run dotnet-fsharplint lint QsFmt.sln
-
       dotnet restore QsCompiler.sln
       dotnet tool run dotnet-fsharplint lint QsCompiler.sln
     displayName: FSharpLint

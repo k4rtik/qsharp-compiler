@@ -36,11 +36,11 @@ module SimulationCode =
     open System.Globalization
 
     type CodegenContext with
-        member this.setCallable(op: QsCallable) =
-            { this with current = (Some op.FullName); signature = (Some op.Signature) }
+        member this.SetCallable(op: QsCallable) =
+            { this with Current = (Some op.FullName); Signature = (Some op.Signature) }
 
-        member this.setUdt(udt: QsCustomType) =
-            { this with current = (Some udt.FullName) }
+        member this.SetUdt(udt: QsCustomType) =
+            { this with Current = (Some udt.FullName) }
 
     let autoNamespaces =
         [
@@ -79,7 +79,7 @@ module SimulationCode =
         if isReserved then name + "__" else name
 
     let isCurrentOp context n =
-        match context.current with
+        match context.Current with
         | None -> false
         | Some name -> name = n
 
@@ -87,17 +87,17 @@ module SimulationCode =
         name.Namespace.Replace(".", "__") + "__" + name.Name
 
     let isConcreteIntrinsic (context: CodegenContext) =
-        match context.assemblyConstants.TryGetValue AssemblyConstants.GenerateConcreteIntrinsic with
+        match context.AssemblyConstants.TryGetValue AssemblyConstants.GenerateConcreteIntrinsic with
         | true, "false" -> false
         | true, _ -> true
         | false, _ -> false
 
     let needsFullPath context (op: QsQualifiedName) =
         let hasMultipleDefinitions () =
-            if context.byName.ContainsKey op.Name then context.byName.[op.Name].Length > 1 else false
+            if context.ByName.ContainsKey op.Name then context.ByName.[op.Name].Length > 1 else false
 
         let sameNamespace =
-            match context.current with
+            match context.Current with
             | None -> false
             | Some n -> n.Namespace = op.Namespace
 
@@ -139,15 +139,15 @@ module SimulationCode =
         if needsFullPath context n then n.Namespace + "." + name else name
 
     let isGeneric context (n: QsQualifiedName) =
-        if context.allCallables.ContainsKey n then
-            let signature = context.allCallables.[n].Signature
+        if context.AllCallables.ContainsKey n then
+            let signature = context.AllCallables.[n].Signature
             not signature.TypeParameters.IsEmpty
         else
             false
 
-    let findUdt context (name: QsQualifiedName) = context.allUdts.[name]
+    let findUdt context (name: QsQualifiedName) = context.AllUdts.[name]
 
-    let isUdt context (name: QsQualifiedName) = context.allUdts.TryGetValue name
+    let isUdt context (name: QsQualifiedName) = context.AllUdts.TryGetValue name
 
     let inAndOutputType (qsharpType: ResolvedType) =
         match qsharpType.Resolution with
@@ -205,10 +205,10 @@ module SimulationCode =
         | _ -> "ICallable"
 
     and roslynCallableTypeName context (name: QsQualifiedName) =
-        if not (context.allCallables.ContainsKey name) then
+        if not (context.AllCallables.ContainsKey name) then
             userDefinedName None name.Name
         else
-            let signature = context.allCallables.[name].Signature
+            let signature = context.AllCallables.[name].Signature
             let tIn = signature.ArgumentType
             let tOut = signature.ReturnType
             let baseInterface = roslynCallableInterfaceName signature.Information.Characteristics
@@ -267,19 +267,19 @@ module SimulationCode =
     type StatementKindSeeker(parent: SyntaxTreeTransformation<HashSet<QsQualifiedName>>) =
         inherit StatementKindTransformation<HashSet<QsQualifiedName>>(parent, TransformationOptions.NoRebuild)
 
-        let ALLOCATE = { Name = "Allocate"; Namespace = "Microsoft.Quantum.Intrinsic" }
-        let RELEASE = { Name = "Release"; Namespace = "Microsoft.Quantum.Intrinsic" }
-        let BORROW = { Name = "Borrow"; Namespace = "Microsoft.Quantum.Intrinsic" }
-        let RETURN = { Name = "Return"; Namespace = "Microsoft.Quantum.Intrinsic" }
+        let allocate = { Name = "Allocate"; Namespace = "Microsoft.Quantum.Intrinsic" }
+        let release = { Name = "Release"; Namespace = "Microsoft.Quantum.Intrinsic" }
+        let borrow = { Name = "Borrow"; Namespace = "Microsoft.Quantum.Intrinsic" }
+        let returnQubit = { Name = "Return"; Namespace = "Microsoft.Quantum.Intrinsic" }
 
         override this.OnAllocateQubits node =
-            this.SharedState.Add ALLOCATE |> ignore
-            this.SharedState.Add RELEASE |> ignore
+            this.SharedState.Add allocate |> ignore
+            this.SharedState.Add release |> ignore
             base.OnAllocateQubits node
 
         override this.OnBorrowQubits node =
-            this.SharedState.Add BORROW |> ignore
-            this.SharedState.Add RETURN |> ignore
+            this.SharedState.Add borrow |> ignore
+            this.SharedState.Add returnQubit |> ignore
             base.OnBorrowQubits node
 
     /// Used to discover which operations are used by a certain code block.
@@ -337,7 +337,7 @@ module SimulationCode =
 
         let withLineNumber s =
             // add a line directive if the operation specifies the source file and a line number
-            match context.fileName, parent.LineNumber with
+            match context.FileName, parent.LineNumber with
             | Some _, Some ln when ln = 0 -> ``#line hidden`` <| s
             | Some n, Some ln -> ``#line`` ln n s
             | Some n, None ->
@@ -347,7 +347,7 @@ module SimulationCode =
                     | None -> s
             | _ -> s
 
-        let QArrayType =
+        let qArrayType =
             function
             | ArrayType b -> generic "QArray" ``<<`` [ roslynTypeName context b ] ``>>`` |> Some
             | _ -> None
@@ -482,7 +482,7 @@ module SimulationCode =
                 failwith "Invalid identifier for named item"
 
         and buildAddExpr (exType: ResolvedType) lhs rhs =
-            match exType.Resolution |> QArrayType with
+            match exType.Resolution |> qArrayType with
             | Some arrType -> arrType <.> (ident "Add", [ buildExpression lhs; buildExpression rhs ])
             | _ -> ``((`` ((buildExpression lhs) <+> (buildExpression rhs)) ``))``
 
@@ -502,7 +502,7 @@ module SimulationCode =
                 failwith "Received InvalidIdentifier"
 
         and buildCopyAndUpdateExpression (lhsEx: TypedExpression, accEx: TypedExpression, rhsEx) =
-            match lhsEx.ResolvedType.Resolution |> QArrayType with
+            match lhsEx.ResolvedType.Resolution |> qArrayType with
             | Some arrayType ->
                 let lhsAsQArray = ``new`` arrayType ``(`` [ buildExpression lhsEx ] ``)``
                 lhsAsQArray <.> (ident "Modify", [ buildExpression accEx; captureExpression rhsEx ]) // in-place modification
@@ -630,7 +630,7 @@ module SimulationCode =
                     match id with
                     | GlobalCallable n ->
                         let sameName =
-                            match context.current with
+                            match context.Current with
                             | None -> false
                             | Some name -> n = name
 
@@ -671,10 +671,10 @@ module SimulationCode =
             ``new`` (``type`` [ "QRange" ]) ``(`` args ``)``
 
         and buildValueArray at elems =
-            match at.Resolution |> QArrayType with
+            match at.Resolution |> qArrayType with
             | Some arrayType -> ``new`` arrayType ``(`` (elems |> Seq.map captureExpression |> Seq.toList) ``)``
             // TODO: diagnostics.
-            | _ -> failwith ""
+            | _ -> failwith "Not an array type."
 
         and buildSizedArray value size =
             let valueName = nextArgName ()
@@ -684,7 +684,7 @@ module SimulationCode =
             ident "QArray" <.> (ident "Filled", [ supplier; buildExpression size ])
 
         and buildNewArray b count =
-            let arrayType = (ArrayType b |> QArrayType).Value
+            let arrayType = (ArrayType b |> qArrayType).Value
             arrayType <.> (ident "Create", [ count |> buildExpression ])
 
         and buildArrayItem a i =
@@ -693,7 +693,7 @@ module SimulationCode =
             | _ -> item (buildExpression a) [ (buildExpression i) ]
 
         let buildBlock (block: QsScope) =
-            let builder = new SyntaxBuilder(context)
+            let builder = SyntaxBuilder(context)
             builder.StartLine <- parent.StartLine
             builder.Statements.OnScope block |> ignore
             builder.BuiltStatements
@@ -761,7 +761,7 @@ module SimulationCode =
 
                 // no need to insert a destructing statement first
                 | VariableName varName ->
-                    match node.Rhs.ResolvedType.Resolution |> QArrayType with
+                    match node.Rhs.ResolvedType.Resolution |> qArrayType with
                     | Some _ when isArrayInit node.Rhs -> // avoid unnecessary copies on construction
                         var varName (``:=`` <| rhs) |> addStatement
                     | Some arrType -> // we need to make sure to bind to a new QArray instance here
@@ -780,7 +780,7 @@ module SimulationCode =
                     for localVar in parent.DeclarationsInStatement.Variables do
                         let varName = localVar.VariableName
 
-                        match localVar.Type.Resolution |> QArrayType with
+                        match localVar.Type.Resolution |> qArrayType with
                         | Some arrType ->
                             let qArray = ``new`` arrType ``(`` [ ident (imName varName) ] ``)``
                             var varName (``:=`` <| qArray) |> addStatement
@@ -823,7 +823,7 @@ module SimulationCode =
                 | _ when node.Rhs |> matchesIdentifier -> () // unnecessary statement
                 | _ ->
                     node.Rhs.ResolvedType.Resolution
-                    |> QArrayType
+                    |> qArrayType
                     |> function
                         | Some _ when isArrayInit node.Rhs -> // avoid unnecessary copies here
                             lhs <-- rhs |> statement |> addStatement
@@ -849,7 +849,7 @@ module SimulationCode =
                 for id in ids do
                     let decl = parent.DeclarationsInScope.Variables |> Seq.tryFind (fun d -> d.VariableName = id)
 
-                    match decl |> Option.map (fun d -> d.Type.Resolution |> QArrayType) |> Option.flatten with
+                    match decl |> Option.map (fun d -> d.Type.Resolution |> qArrayType) |> Option.flatten with
                     | Some arrType -> // we need to make sure to create a new QArray instance here
                         let qArray = ``new`` arrType ``(`` [ imName id |> ident ] ``)``
                         (ident id) <-- qArray |> statement |> addStatement
@@ -1019,14 +1019,14 @@ module SimulationCode =
             base.OnSpecializationDeclaration sp
 
     let operationDependencies (od: QsCallable) =
-        let seeker = new OperationsSeeker()
+        let seeker = OperationsSeeker()
         seeker.Namespaces.OnCallableDeclaration od |> ignore
         seeker.SharedState |> Seq.toList
 
     let getTypeOfOp context (n: QsQualifiedName) =
         let name =
             let sameNamespace =
-                match context.current with
+                match context.Current with
                 | None -> false
                 | Some o -> o.Namespace = n.Namespace
 
@@ -1037,7 +1037,7 @@ module SimulationCode =
                     "global::" + n.Namespace + "." + userDefinedName None n.Name
 
             if isGeneric context n then
-                let signature = context.allCallables.[n].Signature
+                let signature = context.AllCallables.[n].Signature
                 let count = signature.TypeParameters.Length
                 sprintf "%s<%s>" opName (String.replicate (count - 1) ",")
             else
@@ -1097,7 +1097,7 @@ module SimulationCode =
     /// IOperationFactory
     let buildOpsProperties context (operations: QsQualifiedName list) : MemberDeclarationSyntax list =
         let getCallableAccess qualifiedName =
-            match context.allCallables.TryGetValue qualifiedName with
+            match context.AllCallables.TryGetValue qualifiedName with
             | true, callable -> Some callable.Access
             | false, _ -> None
 
@@ -1165,7 +1165,7 @@ module SimulationCode =
             let argName, argsInit = getInputVarWithInit args
 
             let statements =
-                let builder = new SyntaxBuilder(context)
+                let builder = SyntaxBuilder(context)
                 builder.Namespaces.OnSpecializationDeclaration sp |> ignore
                 builder.BuiltStatements
 
@@ -1272,7 +1272,7 @@ module SimulationCode =
                     let startLine = location.Offset.Line + 1
 
                     let endLine =
-                        match context.declarationPositions.TryGetValue sp.Source.AssemblyOrCodeFile with
+                        match context.DeclarationPositions.TryGetValue sp.Source.AssemblyOrCodeFile with
                         | true, startPositions ->
                             let index = startPositions.IndexOf location.Offset
                             if index + 1 >= startPositions.Count then -1 else startPositions.[index + 1].Line + 1
@@ -1367,7 +1367,7 @@ module SimulationCode =
         | _ -> false
 
     let findQubitFields context (qsharpType: ResolvedType) =
-        let item_n n = ident (sprintf "Item%d" (n + 1))
+        let itemN n = ident (sprintf "Item%d" (n + 1))
 
         let rec buildSimpleTerm current nullable (t: ResolvedType) =
             match t.Resolution with
@@ -1383,16 +1383,16 @@ module SimulationCode =
             | QsTypeKind.TupleType tt ->
                 let buildOne j t =
                     if nullable then
-                        buildSimpleTerm (current <|?.|> (item_n j)) false t
+                        buildSimpleTerm (current <|?.|> (itemN j)) false t
                     else
-                        buildSimpleTerm (current <|.|> (item_n j)) false t
+                        buildSimpleTerm (current <|.|> (itemN j)) false t
 
                 tt |> Seq.mapi buildOne |> List.concat
             | _ -> []
 
         match qsharpType.Resolution with
         | QsTypeKind.TupleType many ->
-            many |> Seq.mapi (fun j -> buildSimpleTerm (ident "Data" <|.|> item_n j) false) |> List.concat
+            many |> Seq.mapi (fun j -> buildSimpleTerm (ident "Data" <|.|> itemN j) false) |> List.concat
         | one -> qsharpType |> buildSimpleTerm (ident "Data") true
 
     let areAllQubitArgs (argsTypes: ResolvedType list) =
@@ -1459,13 +1459,13 @@ module SimulationCode =
                 | [ _ ] ->
                     [
                         let (decl, qs) = items.Head
-                        if decl <> null then yield decl
+                        if isNull decl |> not then yield decl
                         yield ``return`` (snd items.Head |> Some)
                     ]
                 | _ ->
                     [
                         for (decl, _) in items do
-                            if decl <> null then yield decl
+                            if isNull decl |> not then yield decl
                         let qs = (ident "Qubit" <.> (ident "Concat", items |> List.map snd))
                         yield ``return`` (Some qs)
                     ]
@@ -1502,7 +1502,7 @@ module SimulationCode =
         let disposeSim = ident "disposeSim"
         let ``this.Output`` = ident "this" <|.|> ident "Output"
         let ``sim.OnLog`` = baseSim <|.|> ident "OnLog"
-        let Execute = generic "Execute" ``<<`` [ opName; "QVoid"; "QVoid" ] ``>>``
+        let execute = generic "Execute" ``<<`` [ opName; "QVoid"; "QVoid" ] ``>>``
 
         let simCond =
             sim |> ``is assign`` "Microsoft.Quantum.Simulation.Common.SimulatorBase" baseSim
@@ -1514,7 +1514,7 @@ module SimulationCode =
         let assignLogEvent =
             ``if`` ``(`` simCond ``)`` [ ``sim.OnLog`` <+=> (``this.Output`` <|.|> ident "WriteLine") ] None
 
-        let ``sim.Execute`` = sim <.> (Execute, [ ident "QVoid" <|.|> ident "Instance" ]) |> statement
+        let ``sim.Execute`` = sim <.> (execute, [ ident "QVoid" <|.|> ident "Instance" ]) |> statement
 
         let disposeOfRun =
             ``if``
@@ -1708,7 +1708,7 @@ module SimulationCode =
 
     // Builds the .NET class for the given operation.
     let buildOperationClass (globalContext: CodegenContext) (op: QsCallable) =
-        let context = globalContext.setCallable op
+        let context = globalContext.SetCallable op
         let (name, nonGenericName) = findClassName op
         let opNames = operationDependencies op
         let inType = op.Signature.ArgumentType |> roslynTypeName context
@@ -1726,8 +1726,8 @@ module SimulationCode =
 
             [
                 yield buildName name
-                yield buildFullName context.current.Value
-                if globalContext.entryPoints |> Seq.contains op.FullName then
+                yield buildFullName context.Current.Value
+                if globalContext.EntryPoints |> Seq.contains op.FullName then
                     yield buildOperationInfoProperty globalContext inType outType nonGenericName
                 if isConcreteIntrinsic then yield buildImpl name
                 yield! opProperties
@@ -1827,7 +1827,7 @@ module SimulationCode =
         | _ -> None
 
     let buildUdtClass (globalContext: CodegenContext) (udt: QsCustomType) =
-        let context = globalContext.setUdt udt
+        let context = globalContext.SetUdt udt
         let name = userDefinedName None udt.FullName.Name
         let qsharpType = udt.Type
 
@@ -1848,7 +1848,7 @@ module SimulationCode =
             let produceProperty (decl: LocalVariableDeclaration<_>) valueExpr =
                 ``property-arrow_get``
                     (roslynTypeName context decl.Type)
-                    (userDefinedName context.current decl.VariableName)
+                    (userDefinedName context.Current decl.VariableName)
                     [ ``public`` ]
                     get
                     (``=>`` valueExpr)
@@ -1953,7 +1953,7 @@ module SimulationCode =
 
         let mutable attributes = []
 
-        let GenerateAndAdd attrName json =
+        let generateAndAdd attrName json =
             let attr = attribute (Some assembly) (ident attrName) [ literal json ]
             attributes <- attr :: attributes
 
@@ -1966,20 +1966,20 @@ module SimulationCode =
             attributes |> List.rev
 
         override this.OnSpecializationDeclaration(spec: QsSpecialization) =
-            (SpecializationDeclarationHeader.New spec).ToJson() |> GenerateAndAdd "SpecializationDeclaration"
+            (SpecializationDeclarationHeader.New spec).ToJson() |> generateAndAdd "SpecializationDeclaration"
             spec
 
         override this.OnCallableDeclaration(callable: QsCallable) =
-            (CallableDeclarationHeader.New callable).ToJson() |> GenerateAndAdd "CallableDeclaration"
+            (CallableDeclarationHeader.New callable).ToJson() |> generateAndAdd "CallableDeclaration"
             base.OnCallableDeclaration callable
 
         override this.OnTypeDeclaration(qsType: QsCustomType) =
-            (TypeDeclarationHeader.New qsType).ToJson() |> GenerateAndAdd "TypeDeclaration"
+            (TypeDeclarationHeader.New qsType).ToJson() |> generateAndAdd "TypeDeclaration"
             qsType
 
 
     let buildDeclarationAttributes elements =
-        let generator = new AttributeGenerator()
+        let generator = AttributeGenerator()
         generator.Apply elements
 
     // Returns only those namespaces and their elements that are defined for the given file.
@@ -2006,8 +2006,8 @@ module SimulationCode =
     // Builds the C# syntaxTree for the Q# elements defined in the given file.
     let buildSyntaxTree localElements (context: CodegenContext) =
         let namespaces = if isConcreteIntrinsic context then autoNamespacesWithInterfaces else autoNamespaces
-        let usings = namespaces |> List.map (fun ns -> using ns)
-        let attributes = localElements |> List.map (snd >> buildDeclarationAttributes) |> List.concat
+        let usings = namespaces |> List.map using
+        let attributes = localElements |> List.collect (snd >> buildDeclarationAttributes)
         let namespaces = localElements |> List.map (buildNamespace context)
 
         ``compilation unit`` attributes usings namespaces
@@ -2047,8 +2047,8 @@ module SimulationCode =
             else
                 None
 
-        let context = { globalContext with fileName = Some dllName }
-        let localElements = findLocalElements isLoadedViaTestName dllName context.allQsElements
+        let context = { globalContext with FileName = Some dllName }
+        let localElements = findLocalElements isLoadedViaTestName dllName context.AllQsElements
 
         let getNameCollisions (_, elems: QsNamespaceElement list) =
             let tryGetCollision =
@@ -2056,7 +2056,7 @@ module SimulationCode =
                 | QsCustomType t ->
                     match SymbolResolution.TryGetOriginalName t.Attributes with
                     | Value origName ->
-                        match context.allUdts.TryGetValue origName with
+                        match context.AllUdts.TryGetValue origName with
                         | true, collision ->
                             if context.GenerateCodeForSource collision.Source.AssemblyOrCodeFile then
                                 None
@@ -2067,7 +2067,7 @@ module SimulationCode =
                 | QsCallable c ->
                     match SymbolResolution.TryGetOriginalName c.Attributes with
                     | Value origName ->
-                        match context.allCallables.TryGetValue origName with
+                        match context.AllCallables.TryGetValue origName with
                         | true, collision ->
                             if context.GenerateCodeForSource collision.Source.AssemblyOrCodeFile then
                                 None
@@ -2100,10 +2100,10 @@ module SimulationCode =
         let filterIntrinsics (ns, elems) =
             ns, elems |> List.filter (not << isIntrinsic)
 
-        let context = { globalContext with fileName = Some fileName }
+        let context = { globalContext with FileName = Some fileName }
 
         let localElements =
-            let elements = findLocalElements Some fileName context.allQsElements
+            let elements = findLocalElements Some fileName context.AllQsElements
             if fileName.EndsWith ".dll" then elements |> List.map filterIntrinsics else elements
 
         buildSyntaxTree localElements context |> formatSyntaxTree

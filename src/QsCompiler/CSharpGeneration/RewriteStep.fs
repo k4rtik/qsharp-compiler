@@ -16,38 +16,38 @@ open Microsoft.Quantum.QsCompiler.Transformations.BasicTransformations
 
 type Emitter() =
 
-    let _AssemblyConstants = new Dictionary<_, _>()
+    let assemblyConstants = new Dictionary<_, _>()
 
-    let _FileNamesGenerated = new HashSet<string>()
+    let fileNamesGenerated = new HashSet<string>()
 
     [<Literal>]
-    let _EnumerationLimit = 100
+    let EnumerationLimit = 100
 
     member private this.WriteFile (fileId: string) outputFolder (fileEnding: string) content overwrite =
         let mutable fileEnding = fileEnding
         let withoutEnding = Path.GetFileNameWithoutExtension(fileId)
         let mutable targetFile = Path.GetFullPath(Path.Combine(outputFolder, withoutEnding + fileEnding))
 
-        if (not overwrite) && _FileNamesGenerated.Contains(targetFile) then
+        if not overwrite && fileNamesGenerated.Contains targetFile then
             let mutable enumeration = 1
             let pos = fileEnding.LastIndexOf('.')
 
             let (beforeEnumeration, afterEnumeration) =
                 if pos = -1 then "", fileEnding else fileEnding.Substring(0, pos), fileEnding.Substring(pos)
 
-            while _FileNamesGenerated.Contains(targetFile) && enumeration < _EnumerationLimit do
+            while fileNamesGenerated.Contains targetFile && enumeration < EnumerationLimit do
                 fileEnding <- beforeEnumeration + enumeration.ToString() + afterEnumeration
                 targetFile <- Path.GetFullPath(Path.Combine(outputFolder, withoutEnding + fileEnding))
                 enumeration <- enumeration + 1
 
-        _FileNamesGenerated.Add targetFile |> ignore
+        fileNamesGenerated.Add targetFile |> ignore
         File.WriteAllText(targetFile, content)
 
     interface IRewriteStep with
 
         member this.Name = "CSharpGeneration"
         member this.Priority = -1 // doesn't matter because this rewrite step is the only one in the dll
-        member this.AssemblyConstants = upcast _AssemblyConstants
+        member this.AssemblyConstants = upcast assemblyConstants
         member this.GeneratedDiagnostics = Seq.empty
 
         member this.ImplementsPreconditionVerification = false
@@ -63,7 +63,7 @@ type Emitter() =
             let dir =
                 step.AssemblyConstants.TryGetValue AssemblyConstants.OutputPath
                 |> function
-                    | true, outputFolder when outputFolder <> null -> Path.Combine(outputFolder, "src")
+                    | true, outputFolder when isNull outputFolder |> not -> Path.Combine(outputFolder, "src")
                     | _ -> step.Name
                 |> (fun str ->
                     (str.TrimEnd [| Path.DirectorySeparatorChar
@@ -84,11 +84,11 @@ type Emitter() =
 
             for source in allSources |> Seq.filter (not << context.GenerateCodeForSource) do
                 let content = SimulationCode.loadedViaTestNames source context
-                if content <> null then this.WriteFile source dir ".dll.g.cs" content false
+                if isNull content |> not then this.WriteFile source dir ".dll.g.cs" content false
 
             if not compilation.EntryPoints.IsEmpty then
 
-                let entryPointCallables = compilation.EntryPoints |> Seq.map (fun ep -> context.allCallables.[ep])
+                let entryPointCallables = compilation.EntryPoints |> Seq.map (fun ep -> context.AllCallables.[ep])
 
                 let entryPointSources = entryPointCallables |> Seq.groupBy (fun ep -> ep.Source.AssemblyOrCodeFile)
 

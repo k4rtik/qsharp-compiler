@@ -313,7 +313,7 @@ namespace Microsoft.Quantum.QsLanguageServer
 
             if (this.editorState.IsNotebook)
             {
-                this.editorState.CreateNotebookProject();
+                this.editorState.CreateNotebookProjectAsync().Wait();
             }
             else
             {

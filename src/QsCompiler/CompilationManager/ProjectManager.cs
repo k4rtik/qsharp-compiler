@@ -187,7 +187,7 @@ namespace Microsoft.Quantum.QsCompiler.CompilationBuilder
     {
         private class Project : IDisposable
         {
-            public static readonly Uri NotebookProjectUri = new Uri("notebook:///");
+            public static readonly Uri NotebookProjectUri = new Uri("notebook:///NotebookProject");
 
             public Uri ProjectFile { get; }
 
@@ -245,8 +245,8 @@ namespace Microsoft.Quantum.QsCompiler.CompilationBuilder
             /// IMPORTANT: This routine queries the current state of the project and does *not* wait for queued or running tasks to finish!
             /// </remarks>
             internal bool ContainsSourceFile(Uri sourceFile) =>
-                this.ProjectFile
-                this.specifiedSourceFiles?.Contains(sourceFile) ?? false;
+                this.ProjectFile == NotebookProjectUri ||
+                (this.specifiedSourceFiles?.Contains(sourceFile) ?? false);
 
             /// <summary>
             /// Returns true if any of the currently specified source files of this project satisfies <paramref name="filter"/>.
@@ -955,7 +955,7 @@ namespace Microsoft.Quantum.QsCompiler.CompilationBuilder
             });
         }
 
-        public Task CreateNotebookProject(ProjectInformation.Loader projectInfoLoader)
+        public Task CreateNotebookProjectAsync(ProjectInformation.Loader projectInfoLoader)
         {
             return this.load.QueueForExecutionAsync(() =>
             {

@@ -221,34 +221,6 @@ namespace Microsoft.Quantum.QsLanguageServer
 
         internal bool NotebookProjectLoader(Uri projectFile, [NotNullWhen(true)] out ProjectInformation? info)
         {
-            void AddProperty(IDictionary<string, string?> props, string property) =>
-                props.Add(property, "");
-
-            var buildProperties = ImmutableDictionary.CreateBuilder<string, string?>();
-            AddProperty(buildProperties, MSBuildProperties.TargetPath); // leave null
-            // TODO: should be propagated from notebook for more helpful text in error message
-            AddProperty(buildProperties, MSBuildProperties.ResolvedProcessorArchitecture); // null ->
-            AddProperty(buildProperties, MSBuildProperties.QuantumSdkPath); // null
-            AddProperty(buildProperties, MSBuildProperties.QuantumSdkVersion); // set to version to version of this assembly (language server)
-            AddProperty(buildProperties, MSBuildProperties.QsharpLangVersion); // null
-            // TODO: want to propagate the runtime capability from the notebook
-            AddProperty(buildProperties, MSBuildProperties.ResolvedRuntimeCapabilities); // null
-            AddProperty(buildProperties, MSBuildProperties.ResolvedQsharpOutputType); // "QSharpLibrary"
-            AddProperty(buildProperties, MSBuildProperties.ExposeReferencesViaTestNames); // null
-            // TODO: in the future if we add formatting support, this will need to be updated
-            AddProperty(buildProperties, MSBuildProperties.QsFmtExe); // null
-
-            info = new ProjectInformation(
-                sourceFiles: ImmutableArray<string>.Empty,
-                projectReferences: ImmutableArray<string>.Empty,
-                references: ImmutableArray<string>.Empty,
-                buildProperties: buildProperties,
-                buildConfiguration: this.buildConfiguration);
-            return true;
-        }
-
-        internal bool NotebookProjectLoader(Uri projectFile, [NotNullWhen(true)] out ProjectInformation? info)
-        {
             var buildProperties = ImmutableDictionary.CreateBuilder<string, string?>();
             buildProperties.Add(MSBuildProperties.TargetPath, null);
 

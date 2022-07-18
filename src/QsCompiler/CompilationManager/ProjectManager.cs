@@ -1432,6 +1432,35 @@ namespace Microsoft.Quantum.QsCompiler.CompilationBuilder
         }
 
         /// <summary>
+        /// Returns a bool (or null) representing if <paramref name="textDocument"/>
+        /// is a notebook cell or not.
+        /// </summary>
+        /// <remarks>
+        /// Returns null if the given file is null.
+        /// <para/>
+        /// This method waits for all currently running or queued tasks to finish
+        /// before getting the file content.
+        /// </remarks>
+        public bool? FileIsNotebookCell(TextDocumentIdentifier textDocument)
+        {
+            if (textDocument?.Uri == null)
+            {
+                return null;
+            }
+
+            this.load.QueueForExecution(
+                () =>
+                {
+                    // NOTE: the call below prevents any consolidating of the processing queues
+                    // of the project manager and the compilation unit manager (dead locks)!
+                    var manager = this.Manager(textDocument.Uri);
+                    return manager?.FileIsNotebookCell(textDocument);
+                },
+                out var content);
+            return (bool?)content;
+        }
+
+        /// <summary>
         /// Returns the content (text representation) of <paramref name="textDocument"/>,
         /// if it is listed as source of a project or in the default manager.
         /// </summary>

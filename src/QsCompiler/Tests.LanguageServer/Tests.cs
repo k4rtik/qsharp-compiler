@@ -541,6 +541,80 @@ namespace Microsoft.Quantum.QsLanguageServer.Testing
             static string PositionToString(Position p) => $"Ln {p.Line}, Col {p.Character}";
         }
 
+        [TestMethod]
+        public async Task NotebookSyntaxRejectedAsync()
+        {
+            var projectFile = ProjectLoaderTests.ProjectUri("test18");
+            var projDir = Path.GetDirectoryName(projectFile.AbsolutePath) ?? "";
+            var programFileWithoutNamespace = Path.Combine(projDir, "Bell.qs");
+            var programFileWithNamespace = Path.Combine(projDir, "Parity.qs");
+
+            var initParams = TestUtils.GetInitializeParams();
+            initParams.RootUri = new Uri(projDir);
+            await this.rpc.NotifyWithParameterObjectAsync(Methods.Initialize.Name, initParams);
+
+            // By default, LanguageId will not contain "notebook"
+            var openParams1 = TestUtils.GetOpenFileParams(programFileWithoutNamespace);
+            await this.rpc.InvokeWithParameterObjectAsync<Task>(Methods.TextDocumentDidOpen.Name, openParams1);
+            Assert.IsFalse(await this.GetFileIsNotebookCellAsync(programFileWithoutNamespace));
+            var diagnostics1 = await this.GetFileDiagnosticsAsync(programFileWithoutNamespace);
+
+            // By default, LanguageId will not contain "notebook"
+            var openParams2 = TestUtils.GetOpenFileParams(programFileWithNamespace);
+            await this.rpc.InvokeWithParameterObjectAsync<Task>(Methods.TextDocumentDidOpen.Name, openParams2);
+            Assert.IsFalse(await this.GetFileIsNotebookCellAsync(programFileWithNamespace));
+            var diagnostics2 = await this.GetFileDiagnosticsAsync(programFileWithNamespace);
+
+            Assert.IsNotNull(diagnostics1);
+            Assert.AreEqual(3, diagnostics1!.Length);
+            for (int i = 0; i < 3; i++)
+            {
+                Assert.AreEqual("QS4002", diagnostics1[i].Code);
+                Assert.AreEqual(DiagnosticSeverity.Error, diagnostics1[i].Severity);
+            }
+
+            Assert.IsNotNull(diagnostics2);
+            Assert.AreEqual(0, diagnostics2!.Length);
+        }
+
+        [TestMethod]
+        public async Task NotebookSyntaxAcceptedAsync()
+        {
+            var projectFile = ProjectLoaderTests.ProjectUri("test18");
+            var projDir = Path.GetDirectoryName(projectFile.AbsolutePath) ?? "";
+            var programFileWithoutNamespace = Path.Combine(projDir, "Bell.qs");
+            var programFileWithNamespace = Path.Combine(projDir, "Parity.qs");
+
+            // Same value sent by Azure Notebooks
+            var languageId = "qsharp-notebook";
+
+            var notebookGuid = Guid.NewGuid();
+            var uriWithoutNamespace = TestUtils.GenerateNotebookCellUri(notebookGuid);
+            var uriWithNamespace = TestUtils.GenerateNotebookCellUri(notebookGuid);
+
+            // Azure Notebooks leaves RootUri=null, so do the same here
+            var initParams = TestUtils.GetInitializeParams();
+            await this.rpc.NotifyWithParameterObjectAsync(Methods.Initialize.Name, initParams);
+
+            var openParams1 = TestUtils.GetOpenFileParams(programFileWithoutNamespace, uriWithoutNamespace, languageId);
+            await this.rpc.InvokeWithParameterObjectAsync<Task>(Methods.TextDocumentDidOpen.Name, openParams1);
+            Assert.IsTrue(await this.GetFileIsNotebookCellAsync(uri: uriWithoutNamespace));
+            var diagnostics1 = await this.GetFileDiagnosticsAsync(uri: uriWithoutNamespace);
+
+            var openParams2 = TestUtils.GetOpenFileParams(programFileWithNamespace, uriWithNamespace, languageId);
+            await this.rpc.InvokeWithParameterObjectAsync<Task>(Methods.TextDocumentDidOpen.Name, openParams2);
+            Assert.IsTrue(await this.GetFileIsNotebookCellAsync(uri: uriWithNamespace));
+            var diagnostics2 = await this.GetFileDiagnosticsAsync(uri: uriWithNamespace);
+
+            Assert.IsNotNull(diagnostics1);
+            Assert.AreEqual(0, diagnostics1!.Length);
+
+            Assert.IsNotNull(diagnostics2);
+            Assert.AreEqual(1, diagnostics2!.Length);
+            Assert.AreEqual("QS3027", diagnostics2[0].Code);
+            Assert.AreEqual(DiagnosticSeverity.Error, diagnostics2[0].Severity);
+        }
+
         private static async Task<ProjectManager> LoadProjectFileAsync(Uri uri)
         {
             var projectManager = new ProjectManager(e => throw e);

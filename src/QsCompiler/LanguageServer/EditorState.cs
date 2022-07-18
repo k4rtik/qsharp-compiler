@@ -261,11 +261,15 @@ namespace Microsoft.Quantum.QsLanguageServer
                     return;
                 }
 
-                var newManager = CompilationUnitManager.InitializeFileManager(textDocument.Uri, textDocument.Text, this.publish, ex =>
+                bool isNotebook = textDocument.LanguageId == "qsharp-notebook";
+
+                var onException = (Exception ex) =>
                 {
                     showError?.Invoke($"Failed to load file '{textDocument.Uri.LocalPath}'", MessageType.Error);
                     manager.LogException(ex);
-                });
+                };
+
+                var newManager = CompilationUnitManager.InitializeFileManager(textDocument.Uri, textDocument.Text, this.publish, onException, isNotebook);
 
                 // Currently it is not possible to handle both the behavior of VS and VS Code for changes on disk in a manner that will never fail.
                 // To mitigate the impact of failures we choose to just log them as info.
@@ -537,6 +541,13 @@ namespace Microsoft.Quantum.QsLanguageServer
         /// </summary>
         internal string[]? FileContentInMemory(TextDocumentIdentifier textDocument) =>
             this.projects.FileContentInMemory(textDocument);
+
+        /// <summary>
+        /// Waits for all currently running or queued tasks to finish before returning if this file is a cell in a notebook
+        /// -> Method to be used for testing/diagnostic purposes only!
+        /// </summary>
+        internal object? FileIsNotebookCell(TextDocumentIdentifier textDocument) =>
+            this.projects.FileIsNotebookCell(textDocument);
 
         /// <summary>
         /// Waits for all currently running or queued tasks to finish before getting the diagnostics for the given file.

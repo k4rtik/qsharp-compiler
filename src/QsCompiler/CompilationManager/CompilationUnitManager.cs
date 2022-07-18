@@ -257,9 +257,10 @@ namespace Microsoft.Quantum.QsCompiler.CompilationBuilder
             Uri uri,
             string fileContent,
             Action<PublishDiagnosticParams>? publishDiagnostics = null,
-            Action<Exception>? onException = null)
+            Action<Exception>? onException = null,
+            bool isNotebook = false)
         {
-            var file = new FileContentManager(uri, GetFileId(uri));
+            var file = new FileContentManager(uri, GetFileId(uri), isNotebook);
             try
             {
                 file.ReplaceFileContent(fileContent);
@@ -940,6 +941,23 @@ namespace Microsoft.Quantum.QsCompiler.CompilationBuilder
         /// </remarks>
         public IEnumerable<Uri>? GetSourceFiles() =>
             this.FlushAndExecute(() => this.fileContentManagers.Keys.Select(id => new Uri(id)).ToImmutableArray().AsEnumerable());
+
+        /// <summary>
+        /// Gets whether a file is a notebook cell
+        /// </summary>
+        /// <returns>
+        /// true if this file is a notebook cell, else false
+        /// </returns>
+        /// <remarks>
+        /// Waits for all currently running or queued tasks to finish
+        /// before getting the file content by calling <see cref="FlushAndExecute"/>.
+        /// </remarks>
+        public bool? FileIsNotebookCell(TextDocumentIdentifier textDocument) =>
+            (bool?)this.FlushAndExecute(() =>
+
+                // Boxing needed here because FileQuery() is generic:
+                // https://devblogs.microsoft.com/dotnet/try-out-nullable-reference-types/#the-issue-with-t
+                this.FileQuery(textDocument, (file, _) => (object)file.IsNotebookCell));
 
         /// <summary>
         /// Gets the current file content (text representation) in memory.
